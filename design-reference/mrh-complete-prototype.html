@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MRH Correspondence Management & Tracking System</title>
+<style>
+:root{
+ --navy-950:#041b31;--navy-900:#06233f;--blue-700:#1d4ed8;--blue-600:#2563eb;
+ --blue-100:#dbeafe;--blue-50:#eff6ff;--slate-950:#0f172a;--slate-900:#172033;
+ --slate-800:#1e293b;--slate-700:#334155;--slate-600:#475569;--slate-500:#64748b;
+ --slate-400:#94a3b8;--slate-300:#cbd5e1;--slate-200:#e2e8f0;--slate-100:#f1f5f9;
+ --slate-50:#f8fafc;--white:#fff;--red-700:#b91c1c;--red-100:#fee2e2;--red-50:#fef2f2;
+ --amber-700:#b45309;--amber-100:#fef3c7;--amber-50:#fffbeb;--green-700:#15803d;
+ --green-100:#dcfce7;--green-50:#f0fdf4;--violet-700:#6d28d9;--violet-100:#ede9fe;
+ --shadow:0 1px 2px rgba(15,23,42,.05);--shadow-lg:0 16px 50px rgba(15,23,42,.14);
+ --sidebar:272px;--topbar:68px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#eef2f7;color:var(--slate-950)}
+a{text-decoration:none;color:inherit}button,input,select,textarea{font:inherit}button{cursor:pointer}svg{display:block}
+.hidden{display:none!important}
+.muted{color:var(--slate-500)}
+
+/* ---------- Login ---------- */
+.login-screen{min-height:100vh;display:grid;grid-template-columns:1.05fr.95fr;background:#fff}
+.login-brand-panel{position:relative;overflow:hidden;background:linear-gradient(150deg,#03182b 0%,#052c50 62%,#0d4a83 100%);color:#fff;padding:52px;display:flex;flex-direction:column;justify-content:space-between}
+.login-brand-panel:before,.login-brand-panel:after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.05)}
+.login-brand-panel:before{width:420px;height:420px;right:-190px;top:-110px}.login-brand-panel:after{width:280px;height:280px;left:-130px;bottom:-80px}
+.login-brand{position:relative;z-index:1;display:flex;align-items:center;gap:13px}
+.login-brand-icon{width:47px;height:47px;border-radius:11px;background:#fff;color:var(--blue-700);display:grid;place-items:center}.login-brand-icon svg{width:26px;height:26px}
+.login-brand strong{display:block;font-size:17px}.login-brand span{display:block;margin-top:3px;font-size:10px;color:rgba(255,255,255,.62)}
+.login-copy{position:relative;z-index:1;max-width:560px}.login-copy h1{font-size:42px;line-height:1.08;letter-spacing:-.04em}.login-copy p{margin-top:16px;font-size:14px;line-height:1.7;color:rgba(255,255,255,.68);max-width:500px}
+.login-feature{display:flex;align-items:center;gap:9px;margin-top:22px;font-size:10px;color:rgba(255,255,255,.74)}.login-feature span{width:7px;height:7px;border-radius:50%;background:#60a5fa}
+.login-footer-note{position:relative;z-index:1;font-size:9px;color:rgba(255,255,255,.42)}
+.login-form-panel{display:grid;place-items:center;padding:30px;background:#f8fafc}
+.login-card{width:min(440px,100%);background:#fff;border:1px solid var(--slate-200);border-radius:15px;padding:28px;box-shadow:0 20px 60px rgba(15,23,42,.08)}
+.login-card h2{font-size:22px;letter-spacing:-.02em}.login-card>p{margin-top:7px;font-size:10px;line-height:1.55;color:var(--slate-500)}
+.demo-note{margin:15px 0;padding:10px 11px;background:var(--blue-50);border:1px solid var(--blue-100);border-radius:9px;font-size:8.7px;line-height:1.5;color:var(--slate-600)}
+.field{margin-bottom:12px}.field label{display:block;margin-bottom:5px;font-size:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:850;color:var(--slate-500)}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--slate-200);border-radius:8px;background:#fff;color:var(--slate-800);outline:none;font-size:10px}
+.field input,.field select{height:40px;padding:0 10px}.field textarea{min-height:84px;padding:10px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.role-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:13px 0}
+.role-card{border:1px solid var(--slate-200);border-radius:9px;padding:11px;background:#fff;text-align:left}
+.role-card.active{border-color:#93c5fd;background:var(--blue-50);box-shadow:0 0 0 2px rgba(37,99,235,.08)}
+.role-card strong{display:block;font-size:9.5px;color:var(--slate-800)}.role-card span{display:block;margin-top:3px;font-size:8px;line-height:1.4;color:var(--slate-500)}
+.full-btn{width:100%}
+
+/* ---------- Shell ---------- */
+.app{min-height:100vh;display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr)}
+.sidebar{height:100vh;position:sticky;top:0;background:linear-gradient(180deg,var(--navy-950),#05233f);color:#fff;display:flex;flex-direction:column}
+.brand{height:88px;padding:0 18px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand-icon{width:38px;height:38px;border-radius:9px;background:#fff;color:var(--blue-700);display:grid;place-items:center}
+.brand-icon svg{width:21px;height:21px}.brand strong{display:block;font-size:13.5px}.brand span{display:block;margin-top:3px;font-size:9.5px;color:rgba(255,255,255,.54)}
+.nav{flex:1;padding:15px 11px;overflow:auto}.group{margin-bottom:18px}.group-title{padding:0 11px 7px;font-size:9px;font-weight:850;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.35)}
+.nav-item{width:100%;height:41px;display:flex;align-items:center;gap:10px;padding:0 11px;border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.72);font-size:12px;font-weight:680;margin-bottom:3px;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#fff}.nav-item.active{background:linear-gradient(90deg,var(--blue-600),#2f6df2);color:#fff}
+.nav-item svg{width:16px;height:16px}.nav-parent{position:relative}.nav-chevron{margin-left:auto;width:14px!important;height:14px!important;transition:transform.18s ease}
+.nav-parent.expanded.nav-chevron{transform:rotate(90deg)}
+.nav-submenu{display:none;margin:4px 0 5px 16px;padding-left:9px;border-left:1px solid rgba(255,255,255,.12)}
+.nav-submenu.open{display:block}
+.nav-subitem{width:100%;height:34px;border:0;background:transparent;display:flex;align-items:center;gap:8px;padding:0 9px;border-radius:7px;color:rgba(255,255,255,.58);font-size:10px;font-weight:700;margin-bottom:2px;text-align:left}
+.nav-subitem:hover{background:rgba(255,255,255,.06);color:#fff}.nav-subitem.active{background:rgba(59,130,246,.18);color:#fff}
+.subdot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7}
+.sidebar-footer{padding:11px;border-top:1px solid rgba(255,255,255,.08)}
+.user-card{padding:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.045);border-radius:10px}
+.user-row{display:flex;align-items:center;gap:9px}.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#dbeafe,#93c5fd);color:var(--navy-900);font-weight:850;font-size:10px}
+.user-meta strong{display:block;font-size:11px}.user-meta span{display:block;margin-top:2px;color:rgba(255,255,255,.52);font-size:9px}
+.footer-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
+.footer-action{width:100%;height:33px;border:0;border-radius:7px;background:transparent;color:rgba(255,255,255,.6);font-size:9.5px;font-weight:750;display:flex;align-items:center;justify-content:center}
+.footer-action:hover,.footer-action.active{background:rgba(255,255,255,.07);color:#fff}.logout{color:#fda4af}
+
+.main{min-width:0;min-height:100vh}.topbar{height:var(--topbar);padding:0 25px;background:#fff;border-bottom:1px solid var(--slate-200);display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:20}
+.crumb{font-size:10.5px;color:var(--slate-500)}.crumb strong{color:var(--slate-800)}
+.top-right{display:flex;align-items:center;gap:10px}.global-search{width:min(320px,30vw);position:relative}
+.global-search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--slate-400)}
+.global-search input{width:100%;height:38px;padding:0 11px 0 35px;border:1px solid var(--slate-200);background:var(--slate-50);border-radius:8px;outline:none;font-size:11px}
+.bell{width:37px;height:37px;border:0;background:transparent;border-radius:8px;color:var(--slate-600);display:grid;place-items:center;position:relative}.bell:hover{background:var(--slate-50)}.bell svg{width:18px;height:18px}
+.bell-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:#dc2626;border:2px solid #fff}
+.top-user{display:flex;align-items:center;gap:8px;padding-left:10px;border-left:1px solid var(--slate-200)}.top-user strong{display:block;font-size:11px}.top-user span{display:block;margin-top:2px;font-size:8.5px;color:var(--slate-500);text-transform:uppercase}
+
+.page{padding:20px 24px 28px}.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:14px}
+.page-head h1{font-size:23px;letter-spacing:-.025em}.page-head p{margin-top:5px;font-size:10px;color:var(--slate-500);line-height:1.5}
+.btn{height:36px;padding:0 12px;border-radius:8px;border:1px solid transparent;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.btn svg{width:14px;height:14px}.btn.primary{background:var(--blue-600);color:#fff}.btn.primary:hover{background:var(--blue-700)}
+.btn.secondary{background:#fff;color:var(--slate-700);border-color:var(--slate-200)}.btn.secondary:hover{background:var(--slate-50)}
+.btn.danger{background:var(--red-50);color:var(--red-700);border-color:var(--red-100)}
+.notice{background:var(--blue-50);border:1px solid var(--blue-100);border-radius:9px;padding:9px 11px;margin-bottom:12px;display:flex;gap:9px}
+.notice svg{width:17px;height:17px;color:var(--blue-700);flex:0 0 auto}.notice strong{display:block;font-size:9px;color:var(--slate-800)}.notice p{margin-top:2px;font-size:8.5px;color:var(--slate-600);line-height:1.45}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.stat{background:#fff;border:1px solid var(--slate-200);border-radius:9px;padding:11px 12px;box-shadow:var(--shadow)}
+.stat label{display:block;font-size:7.5px;font-weight:850;letter-spacing:.07em;text-transform:uppercase;color:var(--slate-500)}
+.stat strong{display:block;margin-top:5px;font-size:20px;color:var(--slate-900)}.stat span{display:block;margin-top:3px;font-size:8px;color:var(--slate-500)}
+.stat.red{background:var(--red-50);border-color:var(--red-100)}.stat.red strong{color:var(--red-700)}
+.stat.amber{background:var(--amber-50);border-color:var(--amber-100)}.stat.amber strong{color:var(--amber-700)}
+.card{background:#fff;border:1px solid var(--slate-200);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+.card-head{padding:11px 13px;border-bottom:1px solid var(--slate-200);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card-head h2{font-size:10.5px;color:var(--slate-800)}.card-head p{margin-top:2px;font-size:8px;color:var(--slate-500)}
+.card-link{font-size:8px;font-weight:850;color:var(--blue-700)}
+.badge{display:inline-flex;height:20px;padding:0 7px;align-items:center;border-radius:999px;font-size:7.2px;font-weight:850;border:1px solid}
+.progress{background:var(--blue-50);color:var(--blue-700);border-color:var(--blue-100)}
+.awaiting{background:var(--amber-50);color:var(--amber-700);border-color:var(--amber-100)}
+.forwarded{background:#f5f3ff;color:var(--violet-700);border-color:var(--violet-100)}
+.completed{background:var(--green-50);color:var(--green-700);border-color:var(--green-100)}
+.registered{background:var(--slate-50);color:var(--slate-600);border-color:var(--slate-200)}
+.overdue{background:var(--red-50);color:var(--red-700);border-color:var(--red-100)}
+.filed{background:#f8fafc;color:#475569;border-color:#e2e8f0}
+footer{display:flex;justify-content:space-between;gap:20px;color:var(--slate-400);font-size:8px;padding-top:14px}
+
+/* ---------- Dashboard ---------- */
+.dashboard-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.75fr);gap:12px}
+.attention-list{padding:6px}
+.attention-row{display:grid;grid-template-columns:minmax(0,1.4fr) 130px 110px 95px;gap:10px;align-items:center;padding:10px;border-radius:8px;cursor:pointer}
+.attention-row:hover{background:var(--slate-50)}.attention-row+.attention-row{margin-top:2px}
+.ref{font-size:8.2px;font-weight:850;color:var(--blue-700);margin-bottom:4px}.subject{font-size:9.7px;font-weight:800;color:var(--slate-900);line-height:1.4}.meta{font-size:7.8px;color:var(--slate-500);margin-top:3px}
+.cell label{display:block;font-size:6.8px;font-weight:850;letter-spacing:.06em;text-transform:uppercase;color:var(--slate-400);margin-bottom:3px}.cell strong{display:block;font-size:8.4px;color:var(--slate-800);line-height:1.35}
+.time-good{color:var(--green-700)!important}.time-warn{color:var(--amber-700)!important}.time-late{color:var(--red-700)!important}
+.quick-actions{padding:7px}.quick-action{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer}.quick-action:hover{background:var(--slate-50)}.quick-action+.quick-action{margin-top:2px}
+.quick-icon{width:34px;height:34px;border-radius:8px;display:grid;place-items:center}.quick-icon svg{width:16px;height:16px}
+.quick-blue{background:var(--blue-50);color:var(--blue-700)}.quick-violet{background:#f5f3ff;color:var(--violet-700)}.quick-amber{background:var(--amber-50);color:var(--amber-700)}
+.quick-copy strong{display:block;font-size:9px;color:var(--slate-800)}.quick-copy span{display:block;margin-top:2px;font-size:7.8px;color:var(--slate-500);line-height:1.4}
+
+/* ---------- Lists / filters ---------- */
+.toolbar{background:#fff;border:1px solid var(--slate-200);border-radius:9px;padding:9px;display:grid;grid-template-columns:minmax(220px,1.45fr) repeat(3,minmax(140px,.72fr)) auto;gap:7px;margin-bottom:11px}
+.toolbar input,.toolbar select{width:100%;height:35px;border:1px solid var(--slate-200);border-radius:7px;padding:0 9px;font-size:9.5px;color:var(--slate-700);outline:none;background:#fff}
+.records{padding:6px}.record{display:grid;grid-template-columns:minmax(0,1.55fr) 145px 165px 125px 115px;gap:10px;align-items:center;padding:10px;border:1px solid transparent;border-radius:8px;cursor:pointer}
+.record:hover{background:var(--slate-50);border-color:var(--slate-200)}.record+.record{margin-top:2px}
+.empty{padding:48px 20px;text-align:center}.empty strong{display:block;font-size:12px}.empty p{margin-top:5px;font-size:9px;color:var(--slate-500)}
+
+/* ---------- Register ---------- */
+.register-grid{display:grid;grid-template-columns:minmax(0,1.45fr) 315px;gap:12px}
+.form-section{padding:14px 15px;border-bottom:1px solid var(--slate-100)}.form-section:last-child{border-bottom:0}
+.form-section-title{margin-bottom:11px}.form-section-title h3{font-size:10px;color:var(--slate-800)}.form-section-title p{margin-top:2px;font-size:8px;color:var(--slate-500)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.readonly{background:var(--slate-50)!important;color:var(--slate-600)!important}
+.form-actions{padding:12px 15px;display:flex;justify-content:flex-end;gap:8px;background:var(--slate-50);border-top:1px solid var(--slate-200)}
+.upload-box{border:1px dashed var(--slate-300);border-radius:9px;padding:16px;text-align:center;background:var(--slate-50)}
+.upload-box svg{width:22px;height:22px;margin:0 auto 7px;color:var(--blue-700)}.upload-box strong{display:block;font-size:9px}.upload-box span{display:block;margin-top:3px;font-size:7.8px;color:var(--slate-500)}
+.overview-block{padding:12px}.overview-highlight{padding:10px;border:1px solid var(--blue-100);background:var(--blue-50);border-radius:8px;margin-bottom:10px}
+.overview-highlight label,.summary-line label{display:block;font-size:6.8px;font-weight:850;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-400);margin-bottom:3px}
+.overview-highlight strong{font-size:10px;color:var(--blue-700)}.summary-line{padding:8px 0;border-bottom:1px solid var(--slate-100)}.summary-line:last-child{border-bottom:0}.summary-line strong{display:block;font-size:8.7px;color:var(--slate-800)}
+.route{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:8px;color:var(--slate-600)}.route span{padding:5px 7px;border-radius:6px;background:var(--slate-50);border:1px solid var(--slate-200)}.route b{color:var(--blue-700)}
+
+/* ---------- Detail ---------- */
+.detail-summary{display:grid;grid-template-columns:1.3fr repeat(4,.65fr);gap:1px;background:var(--slate-200);border:1px solid var(--slate-200);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.summary-cell{background:#fff;padding:11px 12px}.summary-cell label{display:block;font-size:6.8px;font-weight:850;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-400);margin-bottom:4px}.summary-cell strong{display:block;font-size:9px;color:var(--slate-800);line-height:1.4}
+.track-banner{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;background:var(--blue-100);border:1px solid var(--blue-100);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.track-item{background:var(--blue-50);padding:11px 12px}.track-item label{display:block;font-size:6.8px;font-weight:850;text-transform:uppercase;letter-spacing:.06em;color:#60a5fa;margin-bottom:4px}.track-item strong{display:block;font-size:9px;color:var(--blue-700);line-height:1.35}
+.detail-tabs{display:flex;gap:4px;background:#fff;border:1px solid var(--slate-200);border-radius:9px;padding:5px;margin-bottom:12px;width:max-content;max-width:100%;overflow:auto}
+.tab{height:32px;padding:0 12px;border:0;border-radius:6px;background:transparent;color:var(--slate-500);font-size:9px;font-weight:800;white-space:nowrap}.tab.active{background:var(--blue-50);color:var(--blue-700)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.detail-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(310px,.75fr);gap:12px}
+.document-preview{min-height:390px;background:linear-gradient(135deg,#f8fafc,#eef2f7);display:grid;place-items:center;padding:18px}
+.paper{width:min(520px,100%);aspect-ratio:1/1.28;background:#fff;border:1px solid var(--slate-200);box-shadow:0 9px 28px rgba(15,23,42,.08);padding:28px}
+.paper.line{height:7px;background:#e2e8f0;border-radius:4px;margin-bottom:8px}.paper.line.short{width:55%}.paper.line.mid{width:78%}
+.position-card{padding:12px}.position-highlight{padding:10px;border-radius:8px;background:var(--blue-50);border:1px solid var(--blue-100);margin-bottom:10px}.position-highlight label{display:block;font-size:6.8px;text-transform:uppercase;font-weight:850;letter-spacing:.06em;color:#60a5fa}.position-highlight strong{display:block;margin-top:4px;font-size:10px;color:var(--blue-700)}
+.workflow-step{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--slate-100)}.workflow-step:last-child{border-bottom:0}
+.step-dot{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:7px;font-weight:900;background:var(--slate-100);color:var(--slate-500);flex:0 0 auto}.step-dot.done{background:var(--green-100);color:var(--green-700)}.step-dot.current{background:var(--blue-100);color:var(--blue-700)}
+.workflow-step strong{display:block;font-size:8.7px;color:var(--slate-800)}.workflow-step span{display:block;margin-top:2px;font-size:7.7px;color:var(--slate-500);line-height:1.4}
+.action-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.timeline{padding:7px 12px}.timeline-item{display:grid;grid-template-columns:18px 1fr 115px;gap:9px;padding:10px 0;border-bottom:1px solid var(--slate-100)}.timeline-item:last-child{border-bottom:0}
+.timeline-dot{width:12px;height:12px;border-radius:50%;background:var(--blue-100);border:3px solid var(--blue-600);margin-top:2px}.timeline-item strong{font-size:8.8px;color:var(--slate-800)}.timeline-item p{margin-top:3px;font-size:8px;line-height:1.5;color:var(--slate-600)}.timeline-time{font-size:7.5px;color:var(--slate-400);text-align:right}
+
+/* ---------- Notifications ---------- */
+.notification-list{padding:6px}.notification{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px;border:1px solid transparent;border-radius:8px;cursor:pointer}
+.notification:hover{background:var(--slate-50);border-color:var(--slate-200)}.notification+.notification{margin-top:2px}.notification.unread{background:#fafdff}.notification.unread.title:after{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue-600);margin-left:7px;vertical-align:middle}
+.icon-box{width:34px;height:34px;border-radius:8px;display:grid;place-items:center}.icon-box svg{width:16px;height:16px}
+.icon-new{background:var(--blue-50);color:var(--blue-700)}.icon-due{background:var(--amber-50);color:var(--amber-700)}.icon-overdue{background:var(--red-50);color:var(--red-700)}.icon-forward{background:#f5f3ff;color:var(--violet-700)}.icon-complete{background:var(--green-50);color:var(--green-700)}
+.title{font-size:9.7px;font-weight:800;color:var(--slate-900);line-height:1.4}.message{margin-top:3px;font-size:8.5px;color:var(--slate-600);line-height:1.5}.ntime{font-size:7.5px;color:var(--slate-400);white-space:nowrap}
+
+/* ---------- Settings ---------- */
+.settings-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:12px}
+.settings-nav{background:#fff;border:1px solid var(--slate-200);border-radius:10px;padding:7px;height:max-content}
+.settings-nav button{width:100%;height:37px;border:0;border-radius:7px;background:transparent;color:var(--slate-600);font-size:9.5px;font-weight:800;text-align:left;padding:0 10px;margin-bottom:3px}.settings-nav button.active{background:var(--blue-50);color:var(--blue-700)}
+.settings-panel{display:none}.settings-panel.active{display:block}.card-body{padding:14px}
+.profile-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}.profile-avatar{width:52px;height:52px;border-radius:50%;background:var(--blue-100);color:var(--blue-700);display:grid;place-items:center;font-size:15px;font-weight:900}
+.profile-row strong{display:block;font-size:11px}.profile-row span{display:block;margin-top:3px;font-size:8.5px;color:var(--slate-500)}
+.office-note{background:var(--blue-50);border:1px solid var(--blue-100);border-radius:8px;padding:10px 11px;font-size:8.5px;line-height:1.5;color:var(--slate-600)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:11px 0;border-bottom:1px solid var(--slate-100)}.setting-row:last-child{border-bottom:0}
+.setting-copy strong{display:block;font-size:9.3px;color:var(--slate-800)}.setting-copy span{display:block;margin-top:3px;font-size:8px;color:var(--slate-500);line-height:1.45}
+.toggle{width:42px;height:24px;border-radius:999px;border:0;background:var(--slate-300);position:relative;flex:0 0 auto}.toggle:after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.18s ease;box-shadow:0 1px 4px rgba(15,23,42,.2)}.toggle.on{background:var(--blue-600)}.toggle.on:after{left:21px}
+
+/* ---------- Admin ---------- */
+.admin-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.75fr);gap:12px}
+.office-list{padding:6px}.office-row{display:grid;grid-template-columns:minmax(0,1.25fr) 85px 100px 90px;gap:10px;align-items:center;padding:9px 10px;border-radius:8px}.office-row:hover{background:var(--slate-50)}.office-row+.office-row{margin-top:2px}
+.office-name strong{display:block;font-size:9.5px;color:var(--slate-800)}.office-name span{display:block;margin-top:2px;font-size:7.8px;color:var(--slate-500)}
+.badge-good{background:var(--green-50);color:var(--green-700);border-color:var(--green-100)}.badge-watch{background:var(--amber-50);color:var(--amber-700);border-color:var(--amber-100)}.badge-risk{background:var(--red-50);color:var(--red-700);border-color:var(--red-100)}
+.activity-list{padding:6px}.activity{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:9px;align-items:center;padding:9px 10px;border-radius:8px}.activity:hover{background:var(--slate-50)}.activity+.activity{margin-top:2px}
+.activity-icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center}.activity-icon svg{width:14px;height:14px}
+.icon-blue{background:var(--blue-50);color:var(--blue-700)}.icon-violet{background:#f5f3ff;color:var(--violet-700)}.icon-red{background:var(--red-50);color:var(--red-700)}.icon-green{background:var(--green-50);color:var(--green-700)}
+.activity strong{display:block;font-size:8.8px;color:var(--slate-800)}.activity span{display:block;margin-top:2px;font-size:7.7px;color:var(--slate-500)}
+.admin-tabs{display:flex;gap:4px;background:#fff;border:1px solid var(--slate-200);border-radius:9px;padding:5px;margin-bottom:11px;width:max-content}
+.admin-panel{display:none}.admin-panel.active{display:block}
+.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:820px}.table th{padding:9px 11px;text-align:left;border-bottom:1px solid var(--slate-200);font-size:7px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-400);font-weight:850;background:var(--slate-50)}
+.table td{padding:10px 11px;border-bottom:1px solid var(--slate-100);font-size:8.5px;color:var(--slate-700);vertical-align:middle}.table tr:last-child td{border-bottom:0}
+.user-cell{display:flex;align-items:center;gap:8px}.mini-avatar{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:var(--blue-100);color:var(--blue-700);font-weight:850;font-size:8.5px}
+.user-cell strong{display:block;font-size:9px;color:var(--slate-800)}.user-cell span{display:block;margin-top:2px;font-size:7.7px;color:var(--slate-400)}
+.action-btn{height:28px;padding:0 8px;border:1px solid var(--slate-200);border-radius:6px;background:#fff;color:var(--slate-600);font-size:8px;font-weight:800}.action-btn:hover{background:var(--slate-50)}
+
+/* ---------- Audit ---------- */
+.log-list{padding:6px}.log-item{display:grid;grid-template-columns:34px minmax(0,1.35fr) minmax(150px,.68fr) minmax(135px,.62fr) 105px;gap:10px;align-items:center;padding:9px 10px;border:1px solid transparent;border-radius:8px}.log-item:hover{background:var(--slate-50);border-color:var(--slate-200)}.log-item+.log-item{margin-top:2px}
+.log-icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center}.log-icon svg{width:15px;height:15px}
+.icon-register{background:var(--blue-50);color:var(--blue-700)}.icon-forward2{background:#f5f3ff;color:var(--violet-700)}.icon-update{background:var(--amber-50);color:var(--amber-700)}.icon-complete2{background:var(--green-50);color:var(--green-700)}.icon-security{background:var(--red-50);color:var(--red-700)}
+.action-title{font-size:9.5px;font-weight:800;color:var(--slate-900);line-height:1.35}.action-desc{margin-top:2px;font-size:8.2px;color:var(--slate-600);line-height:1.42}.log-cell label{display:block;font-size:6.8px;font-weight:850;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-400);margin-bottom:3px}.log-cell strong{display:block;font-size:8.3px;color:var(--slate-800);line-height:1.35}.log-cell span{display:block;margin-top:2px;font-size:7.6px;color:var(--slate-500)}
+
+/* ---------- Access denied ---------- */
+.denied-wrap{min-height:calc(100vh - var(--topbar));display:grid;place-items:center;padding:30px}
+.denied-card{width:min(610px,100%);background:#fff;border:1px solid var(--slate-200);border-radius:14px;box-shadow:var(--shadow-lg);overflow:hidden}
+.denied-top{padding:28px;text-align:center;border-bottom:1px solid var(--slate-100)}.lock-icon{width:62px;height:62px;border-radius:16px;background:var(--red-50);border:1px solid var(--red-100);color:var(--red-700);display:grid;place-items:center;margin:0 auto 16px}.lock-icon svg{width:29px;height:29px}
+.denied-top h1{font-size:22px}.denied-top p{margin:8px auto 0;max-width:440px;font-size:10px;line-height:1.6;color:var(--slate-500)}.denied-body{padding:18px 22px 20px}
+.info-box{background:var(--slate-50);border:1px solid var(--slate-200);border-radius:10px;padding:12px 13px;margin-bottom:14px}.info-box label{display:block;font-size:7.5px;font-weight:850;text-transform:uppercase;letter-spacing:.07em;color:var(--slate-400);margin-bottom:5px}.info-box strong{display:block;font-size:10px}.info-box span{display:block;margin-top:3px;font-size:8.7px;color:var(--slate-500);line-height:1.45}
+
+/* ---------- Modal / toast ---------- */
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.44);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}.modal-backdrop.open{display:flex}
+.modal{width:min(520px,100%);background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow-lg)}.modal-head{padding:14px 16px;border-bottom:1px solid var(--slate-200);display:flex;justify-content:space-between;align-items:center}.modal-head h3{font-size:12px}.modal-close{width:30px;height:30px;border:0;border-radius:7px;background:var(--slate-50);color:var(--slate-600)}
+.modal-body{padding:15px}.modal-actions{padding:11px 15px;border-top:1px solid var(--slate-200);display:flex;justify-content:flex-end;gap:8px}
+.toast{position:fixed;top:82px;right:18px;z-index:1500;background:#fff;border:1px solid var(--slate-200);border-radius:10px;padding:11px 12px;box-shadow:var(--shadow-lg);min-width:260px;display:none}.toast.show{display:block}.toast strong{display:block;font-size:9.5px}.toast span{display:block;margin-top:3px;font-size:8px;color:var(--slate-500);line-height:1.4}
+
+/* ---------- Responsive ---------- */
+@media(max-width:1120px){
+.dashboard-grid,.admin-grid,.detail-grid,.register-grid{grid-template-columns:1fr}
+.record{grid-template-columns:minmax(0,1.4fr) 140px 140px 110px}.record.time-cell{display:none}
+.toolbar{grid-template-columns:1fr 1fr 1fr}.toolbar input:first-child{grid-column:1/-1}
+.log-item{grid-template-columns:34px minmax(0,1fr) 160px 110px}.office-cell{display:none}
+}
+@media(max-width:900px){
+.app{grid-template-columns:1fr}.sidebar{display:none}.page{padding:15px}.topbar{padding:0 15px}.global-search{display:none}
+.stats{grid-template-columns:1fr 1fr}.detail-summary,.track-banner{grid-template-columns:1fr 1fr}.settings-layout{grid-template-columns:1fr}.settings-nav{display:flex;overflow:auto}.settings-nav button{min-width:max-content}
+}
+@media(max-width:650px){
+.login-screen{grid-template-columns:1fr}.login-brand-panel{display:none}.login-form-panel{padding:15px}
+.page-head{flex-direction:column}.stats{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}.toolbar input:first-child{grid-column:auto}
+.record,.attention-row{grid-template-columns:1fr}.grid-2,.grid-3{grid-template-columns:1fr}.detail-summary,.track-banner{grid-template-columns:1fr}.timeline-item{grid-template-columns:18px 1fr}.timeline-time{grid-column:2;text-align:left}
+.notification{grid-template-columns:34px 1fr}.ntime{grid-column:2}.log-item{grid-template-columns:32px 1fr}.user-cell-log,.time-cell-log{grid-column:2}.role-choice{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+<defs>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7zM14 3v5h5M9 13h6M9 17h6" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H6v-9" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7M10 20h4" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 1 0 0 8Z" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6zM9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="m3 4 18 8-18 8 3-8zM6 12h15" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="m4 20 4-.8L19 8l-3-3L5 16zM14 7l3 3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4 10-10" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20zM12 9v5M12 18h.01" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-office" viewBox="0 0 24 24"><path d="M4 21V5h10v16M14 9h6v12M8 9h2M8 13h2M8 17h2M17 13h1M17 17h1" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+</defs>
+</svg>
+
+<!-- LOGIN -->
+<section id="loginScreen" class="login-screen">
+ <div class="login-brand-panel">
+  <div class="login-brand">
+   <div class="login-brand-icon"><svg><use href="#i-file"/></svg></div>
+   <div><strong>Ministry of Roads and Highways</strong><span>Correspondence Management &amp; Tracking System</span></div>
+  </div>
+  <div class="login-copy">
+   <h1>Track correspondence from office to office.</h1>
+   <p>A simple internal system for registering, routing, tracking and reviewing official correspondence across Ministry offices.</p>
+   <div class="login-feature"><span></span>Office-based ownership and accountability</div>
+   <div class="login-feature"><span></span>Current stage, office, deadline and complete journey</div>
+   <div class="login-feature"><span></span>Role-based access for regular users and system administrators</div>
+  </div>
+  <div class="login-footer-note">Ministry of Roads and Highways</div>
+ </div>
+ <div class="login-form-panel">
+  <div class="login-card">
+   <h2>Sign in to continue</h2>
+   <p>Enter your account details to access the correspondence management system.</p>
+   
+   <div class="field"><label>Email address</label><input id="loginEmail" value="legal.admin@mrh.gov.gh"></div>
+   <div class="field"><label>Password</label><input type="password" value=""></div>
+   <div class="role-choice">
+    <button class="role-card active" id="roleOffice" onclick="chooseLoginRole('office')"><strong>Regular Office User</strong><span>Office-based correspondence workflow.</span></button>
+    <button class="role-card" id="roleAdmin" onclick="chooseLoginRole('admin')"><strong>System Administrator</strong><span>Users, offices, access and audit oversight.</span></button>
+   </div>
+   <button class="btn primary full-btn" onclick="login()">Sign In</button>
+  </div>
+ </div>
+</section>
+
+<!-- APPLICATION SHELL -->
+<div id="appShell" class="app hidden">
+ <aside class="sidebar">
+  <div class="brand">
+   <div class="brand-icon"><svg><use href="#i-file"/></svg></div>
+   <div><strong>MRH Correspondence</strong><span>Management &amp; Tracking System</span></div>
+  </div>
+  <div id="sidebarNav" class="nav"></div>
+  <div class="sidebar-footer">
+   <div class="user-card"><div class="user-row"><div class="avatar" id="sidebarAvatar">LA</div><div class="user-meta"><strong id="sidebarName">Legal Directorate Admin</strong><span id="sidebarRole">Director's Administrator</span></div></div></div>
+   <div class="footer-actions"><button class="footer-action" id="settingsFooter" onclick="navigate('settings')">Settings</button><button class="footer-action logout" onclick="logout()">Logout</button></div>
+  </div>
+ </aside>
+
+ <main class="main">
+  <header class="topbar">
+   <div id="breadcrumb" class="crumb"><strong>Dashboard</strong></div>
+   <div class="top-right">
+    <div class="global-search" id="globalSearchWrap"><svg><use href="#i-search"/></svg><input id="globalSearch" placeholder="Search reference, subject or sender..." onkeydown="if(event.key==='Enter')globalSearchGo()"></div>
+    <button class="bell" id="notificationBell" onclick="navigate('notifications')"><svg><use href="#i-bell"/></svg><span class="bell-dot"></span></button>
+    <div class="top-user"><div class="avatar" id="topAvatar">LA</div><div><strong id="topName">Legal Directorate</strong><span id="topRole">Director's Administrator</span></div></div>
+   </div>
+  </header>
+  <div id="screen"></div>
+ </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modalBackdrop">
+ <div class="modal">
+  <div class="modal-head"><h3 id="modalTitle">Action</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+  <div class="modal-body" id="modalBody"></div>
+  <div class="modal-actions" id="modalActions"></div>
+ </div>
+</div>
+
+<div class="toast" id="toast"><strong id="toastTitle"></strong><span id="toastMessage"></span></div>
+
+<script>
+const state={
+ role:'office',
+ loginChoice:'office',
+ currentScreen:'login',
+ currentStatus:'All',
+ detailRef:'MRH/CON/2026/0012',
+ detailTab:'overview',
+ settingsTab:'profile',
+ adminTab:'users',
+ notifications:[
+  {id:1,type:'New',title:'New correspondence received by Legal Directorate',message:'MRH/CON/2026/0017 — Consultancy Agreement for Feasibility Study has been routed to your office.',ref:'MRH/CON/2026/0017',time:'10 minutes ago',read:false},
+  {id:2,type:'Due Soon',title:'Stage deadline approaching',message:'MRH/CON/2026/0012 — Legal review is due in 1 day and 7 hours.',ref:'MRH/CON/2026/0012',time:'35 minutes ago',read:false},
+  {id:3,type:'Overdue',title:'Correspondence is overdue',message:'MRH/MEM/2026/0061 — Request for Legal Opinion on Contractor Dispute is 1 day overdue.',ref:'MRH/MEM/2026/0061',time:'1 hour ago',read:false},
+  {id:4,type:'Forwarded',title:'Correspondence forwarded from another office',message:'MRH/REP/2026/0031 was forwarded by Highway Planning Directorate for legal review.',ref:'MRH/REP/2026/0031',time:'2 hours ago',read:false},
+  {id:5,type:'Completed',title:'Office action marked completed',message:'MRH/LET/2026/0042 — Legal response has been completed and is ready for the next step.',ref:'MRH/LET/2026/0042',time:'Yesterday, 4:12 PM',read:true}
+ ]
+};
+
+const correspondence=[
+{ref:'MRH/CON/2026/0012',type:'Contract',subject:'Periodic Maintenance Contract for N1 Highway',sender:'Ghana Highway Authority',status:'In Progress',priority:'High',office:'Legal Directorate',stage:'Legal review and contract compliance assessment',arrived:'14 Jul 2026, 9:14 AM',remaining:'1 day 7 hrs',dateType:'recent',timeType:'warn',direction:'Incoming',registered:'12 Jul 2026',deadline:'16 Jul 2026'},
+{ref:'MRH/LET/2026/0088',type:'Letter',subject:'Road Safety Petition from Community Leaders',sender:'N1 Corridor Community Leaders',status:'Awaiting Action',priority:'Normal',office:'Legal Directorate',stage:'Awaiting legal assessment and routing decision',arrived:'14 Jul 2026, 1:30 PM',remaining:'4 days',dateType:'recent',timeType:'good',direction:'Incoming',registered:'14 Jul 2026',deadline:'19 Jul 2026'},
+{ref:'MRH/MEM/2026/0061',type:'Memo',subject:'Request for Legal Opinion on Contractor Dispute',sender:'Procurement Directorate',status:'Overdue',priority:'Urgent',office:'Legal Directorate',stage:'Legal opinion preparation',arrived:'11 Jul 2026, 10:05 AM',remaining:'1 day overdue',dateType:'older',timeType:'late',direction:'Internal',registered:'11 Jul 2026',deadline:'14 Jul 2026'},
+{ref:'MRH/REP/2026/0031',type:'Report',subject:'Structural Assessment of Bridge Rehabilitation Project',sender:'Highway Planning Directorate',status:'In Progress',priority:'High',office:'Legal Directorate',stage:'Review of contractual implications and liability clauses',arrived:'13 Jul 2026, 8:40 AM',remaining:'3 days',dateType:'recent',timeType:'good',direction:'Internal',registered:'13 Jul 2026',deadline:'18 Jul 2026'},
+{ref:'MRH/CON/2026/0017',type:'Contract',subject:'Consultancy Agreement for Feasibility Study',sender:'Office of the Chief Director',status:'Registered',priority:'Normal',office:'Legal Directorate',stage:'Initial classification and legal review preparation',arrived:'15 Jul 2026, 8:15 AM',remaining:'6 days',dateType:'recent',timeType:'good',direction:'Internal',registered:'15 Jul 2026',deadline:'21 Jul 2026'},
+{ref:'MRH/MEM/2026/0049',type:'Memo',subject:'Clarification on Contract Variation Approval Procedure',sender:'Finance Directorate',status:'Forwarded',priority:'Normal',office:'Office of the Chief Director',stage:'Forwarded after completion of legal review',arrived:'12 Jul 2026, 9:00 AM',remaining:'Forwarded today',dateType:'older',timeType:'good',direction:'Internal',registered:'10 Jul 2026',deadline:'17 Jul 2026'},
+{ref:'MRH/LET/2026/0042',type:'Letter',subject:'Response to Request for Right-of-Way Clarification',sender:'Survey and Mapping Division',status:'Completed',priority:'Normal',office:'Legal Directorate',stage:'Legal response completed',arrived:'08 Jul 2026, 10:20 AM',remaining:'Completed',dateType:'older',timeType:'good',direction:'Incoming',registered:'07 Jul 2026',deadline:'12 Jul 2026'},
+{ref:'MRH/REP/2026/0018',type:'Report',subject:'Quarterly Road Maintenance Performance Report',sender:'Highway Maintenance Directorate',status:'Filed',priority:'Normal',office:'Records Office',stage:'Filed after completion',arrived:'02 Jul 2026, 2:10 PM',remaining:'Filed',dateType:'older',timeType:'good',direction:'Internal',registered:'01 Jul 2026',deadline:'08 Jul 2026'}
+];
+
+const users=[
+{name:'Ama Mensah',email:'ama.mensah@mrh.gov.gh',role:'Office User',office:'Legal Directorate',status:'Active',last:'Today, 8:42 AM'},
+{name:'Grace Boateng',email:'grace.boateng@mrh.gov.gh',role:'Office User',office:'Central Registry',status:'Active',last:'Today, 7:55 AM'},
+{name:'Kofi Owusu',email:'kofi.owusu@mrh.gov.gh',role:'Administrator',office:'ICT Directorate',status:'Active',last:'Today, 9:10 AM'},
+{name:'Sarah Addo',email:'sarah.addo@mrh.gov.gh',role:'Office User',office:'Procurement Directorate',status:'Active',last:'Yesterday, 4:18 PM'},
+{name:'John Boateng',email:'john.boateng@mrh.gov.gh',role:'Office User',office:'Finance Directorate',status:'Active',last:'Yesterday, 3:46 PM'},
+{name:'Esi Arthur',email:'esi.arthur@mrh.gov.gh',role:'Office User',office:'Highway Planning Directorate',status:'Inactive',last:'12 Jul 2026'}
+];
+
+const offices=[
+{name:'Central Registry',code:'REG',users:6,active:42,overdue:1,status:'Active'},
+{name:'Legal Directorate',code:'LEG',users:10,active:28,overdue:3,status:'Active'},
+{name:'Finance Directorate',code:'FIN',users:8,active:19,overdue:2,status:'Active'},
+{name:'Procurement Directorate',code:'PROC',users:9,active:31,overdue:5,status:'Active'},
+{name:'Highway Planning Directorate',code:'HPL',users:7,active:25,overdue:0,status:'Active'},
+{name:'Office of the Chief Director',code:'OCD',users:5,active:18,overdue:1,status:'Active'}
+];
+
+const auditLogs=[
+{type:'Registered',title:'Correspondence registered',desc:'MRH/CON/2026/0017 — Consultancy Agreement for Feasibility Study',ref:'MRH/CON/2026/0017',user:'Grace Boateng',office:'Central Registry',role:'Office User',time:'Today, 8:15 AM',date:'Today'},
+{type:'Forwarded',title:'Correspondence forwarded to Legal Directorate',desc:'MRH/CON/2026/0017 moved from Central Registry to Legal Directorate',ref:'MRH/CON/2026/0017',user:'Grace Boateng',office:'Central Registry',role:'Office User',time:'Today, 8:22 AM',date:'Today'},
+{type:'Stage Updated',title:'Current stage updated',desc:'MRH/CON/2026/0012 changed to Legal review and contract compliance assessment',ref:'MRH/CON/2026/0012',user:'Ama Mensah',office:'Legal Directorate',role:'Office User',time:'Today, 9:14 AM',date:'Today'},
+{type:'Security',title:'User role changed',desc:'Account role updated from Office User to Administrator for Kofi Owusu',ref:'Account Access',user:'System Administrator',office:'ICT Directorate',role:'Administrator',time:'Today, 9:32 AM',date:'Today'},
+{type:'Completed',title:'Office action completed',desc:'MRH/LET/2026/0042 — Legal response marked completed by Legal Directorate',ref:'MRH/LET/2026/0042',user:'Ama Mensah',office:'Legal Directorate',role:'Office User',time:'Yesterday, 4:12 PM',date:'Yesterday'},
+{type:'Security',title:'Password reset by administrator',desc:'Temporary password created for an inactive Finance Directorate account',ref:'Account Access',user:'System Administrator',office:'ICT Directorate',role:'Administrator',time:'Yesterday, 10:22 AM',date:'Yesterday'}
+];
+
+function chooseLoginRole(role){
+ state.loginChoice=role;
+ document.getElementById('roleOffice').classList.toggle('active',role==='office');
+ document.getElementById('roleAdmin').classList.toggle('active',role==='admin');
+ document.getElementById('loginEmail').value=role==='admin'?'system.admin@mrh.gov.gh':'legal.admin@mrh.gov.gh';
+}
+
+function login(){
+ state.role=state.loginChoice;
+ document.getElementById('loginScreen').classList.add('hidden');
+ document.getElementById('appShell').classList.remove('hidden');
+ applyRoleShell();
+ navigate(state.role==='admin'?'adminDashboard':'dashboard');
+}
+
+function logout(){
+ state.currentScreen='login';
+ document.getElementById('appShell').classList.add('hidden');
+ document.getElementById('loginScreen').classList.remove('hidden');
+}
+
+function applyRoleShell(){
+ const admin=state.role==='admin';
+ document.getElementById('sidebarAvatar').textContent=admin?'SA':'LA';
+ document.getElementById('topAvatar').textContent=admin?'SA':'LA';
+ document.getElementById('sidebarName').textContent=admin?'System Administrator':'Legal Directorate Admin';
+ document.getElementById('sidebarRole').textContent=admin?'Administrator Access':"Director's Administrator";
+ document.getElementById('topName').textContent=admin?'System Administrator':'Legal Directorate';
+ document.getElementById('topRole').textContent=admin?'Administrator Access':"Director's Administrator";
+ document.getElementById('notificationBell').style.display=admin?'none':'grid';
+ document.getElementById('settingsFooter').style.display=admin?'none':'flex';
+ document.getElementById('globalSearchWrap').style.display='block';
+ buildSidebar();
+}
+
+function buildSidebar(){
+ const admin=state.role==='admin';
+ const statuses=['All','Registered','In Progress','Awaiting Action','Forwarded','Completed','Filed','Overdue'];
+ const statusButtons=statuses.map(s=>`<button class="nav-subitem ${state.currentScreen==='all'&&state.currentStatus===s?'active':''}" onclick="openStatus('${s.replace(/'/g,"\\'")}')"><span class="subdot"></span>${s}</button>`).join('');
+ let html=`<div class="group"><button class="nav-item ${['dashboard','adminDashboard'].includes(state.currentScreen)?'active':''}" onclick="navigate('${admin?'adminDashboard':'dashboard'}')"><svg><use href="#i-home"/></svg>Dashboard</button></div>
+ <div class="group">
+  <div class="group-title">${admin?'Correspondence Oversight':'Correspondence'}</div>
+  <button class="nav-item nav-parent expanded ${state.currentScreen==='all'?'active':''}" onclick="toggleCorrespondenceMenu(this)">
+   <svg><use href="#i-list"/></svg><span>All Correspondence</span>
+   <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <div class="nav-submenu open" id="corrMenu">${statusButtons}</div>
+ </div>`;
+ if(!admin){
+  html+=`<div class="group"><div class="group-title">Actions</div><button class="nav-item ${state.currentScreen==='register'?'active':''}" onclick="navigate('register')"><svg><use href="#i-plus"/></svg>Register New</button></div>`;
+ }else{
+  html+=`<div class="group"><div class="group-title">Administration</div>
+   <button class="nav-item ${state.currentScreen==='adminUsers'?'active':''}" onclick="navigate('adminUsers')"><svg><use href="#i-users"/></svg>Users &amp; Offices</button>
+   <button class="nav-item ${state.currentScreen==='audit'?'active':''}" onclick="navigate('audit')"><svg><use href="#i-shield"/></svg>Audit Log</button>
+  </div>`;
+ }
+ document.getElementById('sidebarNav').innerHTML=html;
+}
+
+function toggleCorrespondenceMenu(btn){
+ const menu=document.getElementById('corrMenu');
+ const open=menu.classList.toggle('open');
+ btn.classList.toggle('expanded',open);
+}
+
+function openStatus(status){
+ state.currentStatus=status;
+ navigate('all');
+}
+
+function guard(screen){
+ const adminOnly=['adminDashboard','adminUsers','audit'];
+ if(adminOnly.includes(screen)&&state.role!=='admin') return 'denied';
+ if(screen==='register'&&state.role==='admin') return 'denied';
+ return screen;
+}
+
+function navigate(screen,opts={}){
+ screen=guard(screen);
+ if(opts.ref) state.detailRef=opts.ref;
+ state.currentScreen=screen;
+ buildSidebar();
+ const renderers={
+  dashboard:renderDashboard,all:renderAll,register:renderRegister,detail:renderDetail,notifications:renderNotifications,
+  settings:renderSettings,adminDashboard:renderAdminDashboard,adminUsers:renderAdminUsers,audit:renderAudit,denied:renderDenied
+ };
+ (renderers[screen]||renderDashboard)();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function setBreadcrumb(section,page){
+ document.getElementById('breadcrumb').innerHTML=`<strong>${section}</strong>${page?` &nbsp;/&nbsp; ${page}`:''}`;
+}
+
+function pageFooter(label='Correspondence Management & Tracking System'){
+ return `<footer><span>© 2026 Ministry of Roads and Highways</span><span>${label}</span></footer>`;
+}
+
+function badgeClass(status){
+ return {'In Progress':'progress','Awaiting Action':'awaiting','Forwarded':'forwarded','Completed':'completed','Registered':'registered','Overdue':'overdue','Filed':'filed'}[status]||'registered';
+}
+function timeClass(type){return type==='late'?'time-late':type==='warn'?'time-warn':'time-good'}
+
+function renderDashboard(){
+ setBreadcrumb('Dashboard','Legal Directorate');
+ const active=correspondence.filter(r=>['In Progress','Awaiting Action','Registered','Overdue'].includes(r.status)).slice(0,5);
+ document.getElementById('screen').innerHTML=`<div class="page">
+  <div class="page-head">
+   <div><h1>Legal Directorate Dashboard</h1><p>A summary of correspondence currently requiring attention from your office.</p></div>
+   <button class="btn primary" onclick="navigate('register')"><svg><use href="#i-plus"/></svg>Register New Correspondence</button>
+  </div>
+  <section class="stats">
+   <article class="stat"><label>Active in Office</label><strong>28</strong><span>Currently with Legal Directorate</span></article>
+   <article class="stat"><label>In Progress</label><strong>14</strong><span>Actively being handled</span></article>
+   <article class="stat amber"><label>Due Soon</label><strong>7</strong><span>Within 48 hours</span></article>
+   <article class="stat red"><label>Overdue</label><strong>4</strong><span>Past stage deadline</span></article>
+  </section>
+  <div class="dashboard-grid">
+   <section class="card">
+    <div class="card-head"><div><h2>Correspondence Requiring Attention</h2><p>Recent records requiring action by the Legal Directorate.</p></div><button class="card-link" style="border:0;background:none" onclick="openStatus('All')">View all</button></div>
+    <div class="attention-list">${active.map(r=>`
+     <article class="attention-row" onclick="navigate('detail',{ref:'${r.ref}'})">
+      <div><div class="ref">${r.ref}</div><div class="subject">${r.subject}</div><div class="meta">${r.type} • ${r.sender}</div></div>
+      <div class="cell"><label>Current Stage</label><strong>${r.stage}</strong></div>
+      <div class="cell"><label>Status</label><span class="badge ${badgeClass(r.status)}">${r.status}</span></div>
+      <div class="cell"><label>Time Remaining</label><strong class="${timeClass(r.timeType)}">${r.remaining}</strong></div>
+     </article>`).join('')}
+    </div>
+   </section>
+   <aside>
+    <section class="card" style="margin-bottom:12px">
+     <div class="card-head"><div><h2>Quick Actions</h2><p>Common correspondence tasks.</p></div></div>
+     <div class="quick-actions">
+      <div class="quick-action" onclick="navigate('register')"><div class="quick-icon quick-blue"><svg><use href="#i-plus"/></svg></div><div class="quick-copy"><strong>Register New Correspondence</strong><span>Create a new correspondence record and route it to an office.</span></div></div>
+      <div class="quick-action" onclick="openStatus('Overdue')"><div class="quick-icon quick-amber"><svg><use href="#i-alert"/></svg></div><div class="quick-copy"><strong>Review Overdue Items</strong><span>Open correspondence that has exceeded its deadline.</span></div></div>
+      <div class="quick-action" onclick="navigate('notifications')"><div class="quick-icon quick-violet"><svg><use href="#i-bell"/></svg></div><div class="quick-copy"><strong>View Notifications</strong><span>See new arrivals, upcoming deadlines and forwarding events.</span></div></div>
+     </div>
+    </section>
+    <section class="card">
+     <div class="card-head"><div><h2>Office Position</h2><p>Current workload summary.</p></div></div>
+     <div class="quick-actions">
+      <div class="quick-action"><div class="quick-icon quick-blue"><svg><use href="#i-office"/></svg></div><div class="quick-copy"><strong>Legal Directorate</strong><span>28 active correspondence records.</span></div></div>
+      <div class="quick-action"><div class="quick-icon quick-amber"><svg><use href="#i-clock"/></svg></div><div class="quick-copy"><strong>Average time in office: 2.4 days</strong><span>Based on current active correspondence.</span></div></div>
+     </div>
+    </section>
+   </aside>
+  </div>
+  ${pageFooter()}
+ </div>`;
+}
+
+function renderAll(){
+ setBreadcrumb('Correspondence',state.currentStatus==='All'?'All Correspondence':`${state.currentStatus} Correspondence`);
+ const title=state.currentStatus==='All'?'All Correspondence':`${state.currentStatus} Correspondence`;
+ document.getElementById('screen').innerHTML=`<div class="page">
+  <div class="page-head">
+   <div><h1>${title}</h1><p>${state.role==='admin'?'System-wide correspondence oversight across authorised offices.':'Search and track correspondence available to the Legal Directorate.'}</p></div>
+   ${state.role==='office'?`<button class="btn primary" onclick="navigate('register')"><svg><use href="#i-plus"/></svg>Register New Correspondence</button>`:''}
+  </div>
+  <section class="toolbar">
+   <input id="corrSearch" placeholder="Search by reference, subject, sender or stage..." oninput="refreshAllList()">
+   <select id="corrType" onchange="refreshAllList()"><option value="">All document types</option><option>Contract</option><option>Memo</option><option>Letter</option><option>Report</option></select>
+   <select id="corrPriority" onchange="refreshAllList()"><option value="">All priorities</option><option>Normal</option><option>High</option><option>Urgent</option></select>
+   <select id="corrDate" onchange="refreshAllList()"><option value="">Any date</option><option value="recent">Recently received</option><option value="older">Older records</option></select>
+   <button class="btn secondary" onclick="resetAllFilters()">Reset</button>
+  </section>
+  <section class="card">
+   <div class="card-head"><div><h2>${title}</h2><p>${state.currentStatus==='All'?'All correspondence records available under your current access.':`Only records currently classified as ${state.currentStatus}.`}</p></div><span id="corrCount" class="muted" style="font-size:8px"></span></div>
+   <div class="records" id="corrRecords"></div>
+  </section>
+  ${pageFooter()}
+ </div>`;
+ refreshAllList();
+}
+
+function refreshAllList(){
+ const q=(document.getElementById('corrSearch')?.value||'').toLowerCase();
+ const type=document.getElementById('corrType')?.value||'';
+ const priority=document.getElementById('corrPriority')?.value||'';
+ const dateType=document.getElementById('corrDate')?.value||'';
+ const filtered=correspondence.filter(r=>
+  (state.currentStatus==='All'||r.status===state.currentStatus)&&
+  (!q||[r.ref,r.subject,r.sender,r.stage,r.office].join(' ').toLowerCase().includes(q))&&
+  (!type||r.type===type)&&(!priority||r.priority===priority)&&(!dateType||r.dateType===dateType)
+ );
+ document.getElementById('corrCount').textContent=`${filtered.length} record${filtered.length===1?'':'s'} shown`;
+ document.getElementById('corrRecords').innerHTML=filtered.length?filtered.map(r=>`
+  <article class="record" onclick="navigate('detail',{ref:'${r.ref}'})">
+   <div><div class="ref">${r.ref}</div><div class="subject">${r.subject}</div><div class="meta">${r.type} • ${r.sender}</div></div>
+   <div class="cell"><label>Current Stage</label><strong>${r.stage}</strong></div>
+   <div class="cell"><label>Current Office</label><strong>${r.office}</strong><div class="meta">Arrived ${r.arrived}</div></div>
+   <div class="cell"><label>Status</label><span class="badge ${badgeClass(r.status)}">${r.status}</span></div>
+   <div class="cell time-cell"><label>Time Remaining</label><strong class="${timeClass(r.timeType)}">${r.remaining}</strong></div>
+  </article>`).join(''):`<div class="empty"><strong>No correspondence found</strong><p>Try another status or adjust the filters.</p></div>`;
+}
+function resetAllFilters(){
+ ['corrSearch','corrType','corrPriority','corrDate'].forEach(id=>document.getElementById(id).value='');
+ refreshAllList();
+}
+
+function renderRegister(){
+ setBreadcrumb('Correspondence','Register New');
+ document.getElementById('screen').innerHTML=`<div class="page">
+  <div class="page-head"><div><h1>Register New Correspondence</h1><p>Create the correspondence record, capture the document information and establish its initial office route.</p></div></div>
+  <div class="register-grid">
+   <section class="card">
+    <div class="form-section">
+     <div class="form-section-title"><h3>Correspondence Details</h3><p>Basic identifying information for the record.</p></div>
+     <div class="grid-2">
+      <div class="field"><label>System Reference</label><input class="readonly" value="MRH/CON/2026/0093" readonly></div>
+      <div class="field"><label>Document Type</label><select id="regType" onchange="updateRegisterOverview()"><option>Contract</option><option>Memo</option><option>Letter</option><option>Report</option></select></div>
+     </div>
+     <div class="field"><label>Subject / Title</label><input id="regSubject" value="Proposed Road Rehabilitation Contract Review" oninput="updateRegisterOverview()"></div>
+     <div class="grid-2">
+      <div class="field"><label>Direction</label><select id="regDirection" onchange="updateRegisterOverview()"><option>Incoming</option><option>Outgoing</option><option>Internal</option></select></div>
+      <div class="field"><label>Priority</label><select id="regPriority" onchange="updateRegisterOverview()"><option>Normal</option><option>High</option><option>Urgent</option></select></div>
+     </div>
+     <div class="grid-2">
+      <div class="field"><label>Sender / Originating Organisation</label><input value="Ghana Highway Authority"></div>
+      <div class="field"><label>External Reference</label><input value="GHA/PRJ/2026/144"></div>
+     </div>
+    </div>
+    <div class="form-section">
+     <div class="form-section-title"><h3>Dates & Routing</h3><p>Set the receiving details and initial office route.</p></div>
+     <div class="grid-3">
+      <div class="field"><label>Document Date</label><input type="date" value="2026-07-15"></div>
+      <div class="field"><label>Date Received</label><input type="date" value="2026-07-15"></div>
+      <div class="field"><label>Overall Completion</label><input type="date" value="2026-07-22"></div>
+     </div>
+     <div class="grid-2">
+      <div class="field"><label>Registering Office</label><input class="readonly" value="Legal Directorate" readonly></div>
+      <div class="field"><label>Route to Office</label><select id="regRoute" onchange="updateRegisterOverview()"><option>Legal Directorate</option><option>Central Registry</option><option>Office of the Chief Director</option><option>Procurement Directorate</option><option>Finance Directorate</option></select></div>
+     </div>
+     <div class="grid-2">
+      <div class="field"><label>Initial Stage</label><select id="regStage" onchange="updateRegisterOverview()"><option>Initial legal review</option><option>Awaiting action</option><option>Director review</option></select></div>
+      <div class="field"><label>Stage Deadline</label><input type="date" value="2026-07-18"></div>
+     </div>
+    </div>
+    <div class="form-section">
+     <div class="form-section-title"><h3>Instructions & Notes</h3><p>Capture the required action and administrative context.</p></div>
+     <div class="field"><label>Required Action / Instructions</label><textarea>Review contract terms, assess compliance implications and advise on next action.</textarea></div>
+     <div class="field"><label>Administrative Notes</label><textarea placeholder="Optional internal administrative note..."></textarea></div>
+    </div>
+    <div class="form-actions"><button class="btn secondary" onclick="navigate('dashboard')">Cancel</button><button class="btn primary" onclick="completeRegistration()">Register Correspondence</button></div>
+   </section>
+
+   <aside>
+    <section class="card" style="margin-bottom:12px">
+     <div class="card-head"><div><h2>Document Attachment</h2><p>Add the correspondence file to this record.</p></div></div>
+     <div class="overview-block"><div class="upload-box"><svg><use href="#i-upload"/></svg><strong>Choose or drop a document</strong><span>PDF, Word or image files • Supported file types</span></div></div>
+    </section>
+    <section class="card">
+     <div class="card-head"><div><h2>Registration Overview</h2><p>Summary of the record that will be created.</p></div></div>
+     <div class="overview-block" id="registerOverview"></div>
+    </section>
+   </aside>
+  </div>
+  ${pageFooter()}
+ </div>`;
+ updateRegisterOverview();
+}
+
+function updateRegisterOverview(){
+ const type=document.getElementById('regType')?.value||'Contract';
+ const direction=document.getElementById('regDirection')?.value||'Incoming';
+ const priority=document.getElementById('regPriority')?.value||'Normal';
+ const route=document.getElementById('regRoute')?.value||'Legal Directorate';
+ const stage=document.getElementById('regStage')?.value||'Initial legal review';
+ document.getElementById('registerOverview').innerHTML=`
+  <div class="overview-highlight"><label>Destination Office</label><strong>${route}</strong></div>
+  <div class="summary-line"><label>System Reference</label><strong>MRH/CON/2026/0093</strong></div>
+  <div class="summary-line"><label>Document Type</label><strong>${type}</strong></div>
+  <div class="summary-line"><label>Direction</label><strong>${direction}</strong></div>
+  <div class="summary-line"><label>Priority</label><strong>${priority}</strong></div>
+  <div class="summary-line"><label>Initial Stage</label><strong>${stage}</strong></div>
+  <div class="summary-line"><label>Initial Route</label><div class="route"><span>Legal Directorate</span><b>→</b><span>${route}</span></div></div>`;
+}
+
+function completeRegistration(){
+ const newRec={ref:'MRH/CON/2026/0093',type:document.getElementById('regType').value,subject:document.getElementById('regSubject').value||'New correspondence',sender:'Ghana Highway Authority',status:'Registered',priority:document.getElementById('regPriority').value,office:document.getElementById('regRoute').value,stage:document.getElementById('regStage').value,arrived:'15 Jul 2026, 9:45 AM',remaining:'3 days',dateType:'recent',timeType:'good',direction:document.getElementById('regDirection').value,registered:'15 Jul 2026',deadline:'18 Jul 2026'};
+ if(!correspondence.find(r=>r.ref===newRec.ref)) correspondence.unshift(newRec);
+ showToast('Correspondence registered','The correspondence record has been created and opened.');
+ navigate('detail',{ref:newRec.ref});
+}
+
+function renderDetail(){
+ const r=correspondence.find(x=>x.ref===state.detailRef)||correspondence[0];
+ setBreadcrumb('Correspondence',r.ref);
+ document.getElementById('screen').innerHTML=`<div class="page">
+  <div class="page-head">
+   <div><h1>Correspondence Detail & Tracking</h1><p>View the complete record, current office position, workflow journey and supporting information.</p></div>
+   <button class="btn secondary" onclick="navigate('all')">Back to Correspondence</button>
+  </div>
+
+  <section class="detail-summary">
+   <div class="summary-cell"><label>Reference & Subject</label><strong>${r.ref}</strong><div class="meta">${r.subject}</div></div>
+   <div class="summary-cell"><label>Type</label><strong>${r.type}</strong></div>
+   <div class="summary-cell"><label>Priority</label><strong>${r.priority}</strong></div>
+   <div class="summary-cell"><label>Status</label><span class="badge ${badgeClass(r.status)}">${r.status}</span></div>
+   <div class="summary-cell"><label>Overall Deadline</label><strong>${r.deadline}</strong></div>
+  </section>
+
+  <section class="track-banner">
+   <div class="track-item"><label>Current Office</label><strong>${r.office}</strong></div>
+   <div class="track-item"><label>Current Stage</label><strong>${r.stage}</strong></div>
+   <div class="track-item"><label>Arrived at Office</label><strong>${r.arrived}</strong></div>
+   <div class="track-item"><label>Time Until Action Is Due</label><strong>${r.remaining}</strong></div>
+  </section>
+
+  <nav class="detail-tabs">
+   ${['overview','journey','record','attachments','notes'].map(t=>`<button class="tab ${state.detailTab===t?'active':''}" onclick="setDetailTab('${t}')">${({overview:'Overview',journey:'Journey & Audit',record:'Record Details',attachments:'Attachments',notes:'Notes'})[t]}</button>`).join('')}
+  </nav>
+  <div id="detailTabContent"></div>
+  ${pageFooter()}
+ </div>`;
+ renderDetailTab();
+}
+
+function setDetailTab(tab){state.detailTab=tab;renderDetail()}
+
+function renderDetailTab(){
+ const r=correspondence.find(x=>x.ref===state.detailRef)||correspondence[0];
+ const target=document.getElementById('detailTabContent');
+ if(state.detailTab==='overview'){
+  target.innerHTML=`<div class="detail-grid">
+   <section class="card"><div class="card-head"><div><h2>Document Preview</h2><p>Attached correspondence document.</p></div></div><div class="document-preview"><div class="paper"><div class="line short"></div><div class="line mid"></div><div class="line"></div><div class="line"></div><div style="height:18px"></div><div class="line mid"></div><div class="line"></div><div class="line"></div><div class="line short"></div><div style="height:26px"></div><div class="line"></div><div class="line mid"></div></div></div></section>
+   <aside>
+    <section class="card" style="margin-bottom:12px"><div class="card-head"><div><h2>Current Position</h2><p>Where the correspondence is now.</p></div></div><div class="position-card">
+     <div class="position-highlight"><label>Current Office</label><strong>${r.office}</strong></div>
+     <div class="summary-line"><label>Current Stage</label><strong>${r.stage}</strong></div>
+     <div class="summary-line"><label>Time in Current Office</label><strong>1 day 4 hours</strong></div>
+     <div class="summary-line"><label>Time Remaining</label><strong class="${timeClass(r.timeType)}">${r.remaining}</strong></div>
+    </div></section>
+    <section class="card"><div class="card-head"><div><h2>Workflow Progress</h2><p>Office-to-office journey.</p></div></div><div class="position-card">
+     <div class="workflow-step"><div class="step-dot done">✓</div><div><strong>Central Registry</strong><span>Registered and classified.</span></div></div>
+     <div class="workflow-step"><div class="step-dot done">✓</div><div><strong>Office of the Chief Director</strong><span>Reviewed and routed for legal action.</span></div></div>
+     <div class="workflow-step"><div class="step-dot current">3</div><div><strong>${r.office}</strong><span>${r.stage}</span></div></div>
+    </div></section>
+   </aside>
+  </div>
+  <div class="action-bar">
+   <button class="btn secondary" onclick="openStageModal()">Update Stage</button>
+   <button class="btn primary" onclick="openForwardModal()">Forward to Office</button>
+   <button class="btn secondary" onclick="markCompleted()">Mark Completed</button>
+  </div>`;
+ }else if(state.detailTab==='journey'){
+  target.innerHTML=`<section class="card"><div class="card-head"><div><h2>Journey & Audit</h2><p>Complete office-to-office movement and accountable actions for this correspondence.</p></div></div><div class="timeline">
+   <div class="timeline-item"><div class="timeline-dot"></div><div><strong>Current stage updated</strong><p>${r.stage}. Recorded by Legal Directorate Admin on behalf of Legal Directorate.</p></div><div class="timeline-time">15 Jul 2026, 9:14 AM</div></div>
+   <div class="timeline-item"><div class="timeline-dot"></div><div><strong>Forwarded to ${r.office}</strong><p>Moved from Office of the Chief Director for office action.</p></div><div class="timeline-time">14 Jul 2026, 9:14 AM</div></div>
+   <div class="timeline-item"><div class="timeline-dot"></div><div><strong>Reviewed by Office of the Chief Director</strong><p>Routing decision recorded for legal assessment.</p></div><div class="timeline-time">13 Jul 2026, 3:42 PM</div></div>
+   <div class="timeline-item"><div class="timeline-dot"></div><div><strong>Correspondence registered</strong><p>Reference ${r.ref} created and initial details captured.</p></div><div class="timeline-time">${r.registered}, 10:05 AM</div></div>
+  </div></section>`;
+ }else if(state.detailTab==='record'){
+  target.innerHTML=`<section class="card"><div class="card-head"><div><h2>Record Details</h2><p>Complete identifying and routing information.</p></div></div><div class="card-body">
+   <div class="grid-3">
+    <div class="field"><label>Reference</label><input class="readonly" value="${r.ref}" readonly></div>
+    <div class="field"><label>Document Type</label><input class="readonly" value="${r.type}" readonly></div>
+    <div class="field"><label>Direction</label><input class="readonly" value="${r.direction}" readonly></div>
+   </div>
+   <div class="field"><label>Subject</label><input class="readonly" value="${r.subject}" readonly></div>
+   <div class="grid-2">
+    <div class="field"><label>Sender / Origin</label><input class="readonly" value="${r.sender}" readonly></div>
+    <div class="field"><label>Current Office</label><input class="readonly" value="${r.office}" readonly></div>
+   </div>
+  </div></section>`;
+ }else if(state.detailTab==='attachments'){
+  target.innerHTML=`<section class="card"><div class="card-head"><div><h2>Attachments</h2><p>Documents linked to this correspondence record.</p></div></div><div class="records">
+   <article class="record" style="grid-template-columns:minmax(0,1fr) 130px 120px"><div><div class="subject">${r.type.toLowerCase()}_document.pdf</div><div class="meta">Primary correspondence attachment</div></div><div class="cell"><label>Uploaded By</label><strong>Legal Directorate Admin</strong></div><div class="cell"><label>Size</label><strong>1.8 MB</strong></div></article>
+  </div></section>`;
+ }else{
+  target.innerHTML=`<section class="card"><div class="card-head"><div><h2>Notes</h2><p>Administrative notes recorded against this correspondence.</p></div></div><div class="card-body">
+   <div class="office-note"><strong>15 Jul 2026, 9:18 AM — Legal Directorate Admin</strong><br>Initial legal review commenced. Contract clauses requiring further attention have been identified.</div>
+   <div class="field" style="margin-top:12px"><label>Add Note</label><textarea placeholder="Enter an administrative note..."></textarea></div>
+   <div style="display:flex;justify-content:flex-end"><button class="btn primary" onclick="showToast('Note added','The note has been recorded.')">Add Note</button></div>
+  </div></section>`;
+ }
+}
+
+function openStageModal(){
+ openModal('Update Current Stage',`<div class="field"><label>New Stage</label><select id="modalStage"><option>Legal review and contract compliance assessment</option><option>Awaiting director review</option><option>Legal opinion preparation</option><option>Ready for forwarding</option></select></div><div class="field"><label>Stage Deadline</label><input type="date" value="2026-07-18"></div><div class="field"><label>Note</label><textarea placeholder="Optional note..."></textarea></div>`,
+ `<button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveStage()">Update Stage</button>`);
+}
+function saveStage(){closeModal();showToast('Stage updated','The correspondence stage has been updated.')}
+function openForwardModal(){
+ openModal('Forward to Office',`<div class="field"><label>Destination Office</label><select><option>Office of the Chief Director</option><option>Central Registry</option><option>Finance Directorate</option><option>Procurement Directorate</option></select></div><div class="field"><label>Forwarding Instruction</label><textarea>Kindly review and take the necessary action.</textarea></div>`,
+ `<button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="forwardRecord()">Forward Correspondence</button>`);
+}
+function forwardRecord(){closeModal();showToast('Correspondence forwarded','The correspondence has been forwarded to the selected office.')}
+function markCompleted(){showToast('Action completed','This correspondence has been marked completed.')}
+
+function renderNotifications(){
+ setBreadcrumb('Account','Notifications');
+ document.getElementById('screen').innerHTML=`<div class="page">
+  <div class="page-head"><div><h1>Notifications</h1><p>Office-level alerts and updates relevant to the Legal Directorate.</p></div><button class="btn secondary" onclick="markAllRead()">Mark All as Read</button></div>
+  <section class="stats">
+   <article class="stat"><label>Unread</label><strong id="unreadCount">${state.notifications.filter(n=>!n.read).length}</strong><span>New notifications</span></article>
+   <article class="stat"><label>Newly Received</label><strong>3</strong><span>Recently routed to your office</span></article>
+   <article class="stat amber"><label>Due Soon</label><strong>7</strong><span>Within 48 hours</span></article>
+   <article class="stat red"><label>Overdue</label><strong>4</strong><span>Past deadline</span></article>
+  </section>
+  <section class="toolbar" style="grid-template-columns:minmax(220px,1.4fr) repeat(2,minmax(150px,.7fr)) auto">
+   <input id="notifSearch" placeholder="Search notifications..." oninput="refreshNotifications()">
+   <select id="notifType" onchange="refreshNotifications()"><option value="">All notification types</option><option>New</option><option>Due Soon</option><option>Overdue</option><option>Forwarded</option><option>Completed</option></select>
+   <select id="notifRead" onchange="refreshNotifications()"><option value="">All</option><option value="Unread">Unread only</option><option value="Read">Read only</option></select>
+   <button class="btn secondary" onclick="resetNotifications()">Reset</button>
+  </section>
+  <section class="card"><div class="card-head"><div><h2>Office Notifications</h2><p>Click a notification to open the related correspondence record.</p></div><span id="notifCount" class="muted" style="font-size:8px"></span></div><div class="notification-list" id="notifList"></div></section>
+  ${pageFooter()}
+ </div>`;
+ refreshNotifications();
+}
+function notifIcon(type){return {'New':['i-file','icon-new'],'Due Soon':['i-clock','icon-due'],'Overdue':['i-alert','icon-overdue'],'Forwarded':['i-send','icon-forward'],'Completed':['i-check','icon-complete']}[type]||['i-file','icon-new']}
+function refreshNotifications(){
+ const q=(document.getElementById('notifSearch')?.value||'').toLowerCase(), type=document.getElementById('notifType')?.value||'', read=document.getElementById('notifRead')?.value||'';
+ const filtered=state.notifications.filter(n=>(!q||[n.title,n.message,n.ref].join(' ').toLowerCase().includes(q))&&(!type||n.type===type)&&(!read||(read==='Unread'?!n.read:n.read)));
+ document.getElementById('notifCount').textContent=`${filtered.length} notification${filtered.length===1?'':'s'} shown`;
+ document.getElementById('notifList').innerHTML=filtered.length?filtered.map(n=>{const [icon,cls]=notifIcon(n.type);return `<article class="notification ${n.read?'':'unread'}" onclick="openNotification(${n.id})"><div class="icon-box ${cls}"><svg><use href="#${icon}"/></svg></div><div><div class="title">${n.title}</div><div class="message">${n.message}</div><div class="meta">${n.ref} • ${n.type}</div></div><div class="ntime">${n.time}</div></article>`}).join(''):`<div class="empty"><strong>No notifications found</strong><p>Try changing the filters.</p></div>`;
+ document.getElementById('unreadCount').textContent=state.notifications.filter(n=>!n.read).length;
+}
+function openNotification(id){const n=state.notifications.find(x=>x.id===id);if(!n)return;n.read=true;navigate('detail',{ref:n.ref})}
+function markAllRead(){state.notifications.forEach(n=>n.read=true);refreshNotifications();showToast('Notifications updated','All notifications are now marked as read.')}
+function resetNotifications(){['notifSearch','notifType','notifRead'].forEach(id=>document.getElementById(id).value='');refreshNotifications()}
+
+function renderSettings(){
+ setBreadcrumb('Account','Settings');
+ document.getElementById('screen').innerHTML=`<div class="page">
+  <div class="page-head"><div><h1>Account & Preferences</h1><p>View your account and office information and manage simple personal preferences.</p></div></div>
+  <div class="settings-layout">
+   <nav class="settings-nav">
+    <button class="${state.settingsTab==='profile'?'active':''}" onclick="setSettingsTab('profile')">Account & Office</button>
+    <button class="${state.settingsTab==='preferences'?'active':''}" onclick="setSettingsTab('preferences')">Preferences</button>
+   </nav>
+   <div id="settingsContent"></div>
+  </div>
+  ${pageFooter()}
+ </div>`;
+ renderSettingsContent();
+}
+function setSettingsTab(tab){state.settingsTab=tab;renderSettings()}
+function renderSettingsContent(){
+ const target=document.getElementById('settingsContent');
+ if(state.settingsTab==='profile'){
+  target.innerHTML=`<section class="card"><div class="card-head"><div><h2>Account Information</h2><p>Your login identity and office association.</p></div></div><div class="card-body">
+   <div class="profile-row"><div class="profile-avatar">LA</div><div><strong>Legal Directorate Admin</strong><span>Director's Administrator • Legal Directorate</span></div></div>
+   <div class="grid-2"><div class="field"><label>Display Name</label><input class="readonly" value="Legal Directorate Admin" readonly></div><div class="field"><label>Email Address</label><input class="readonly" value="legal.admin@mrh.gov.gh" readonly></div></div>
+   <div class="grid-2"><div class="field"><label>Office</label><input class="readonly" value="Legal Directorate" readonly></div><div class="field"><label>Role</label><input class="readonly" value="Office User" readonly></div></div>
+   <div class="office-note"><strong>Administrator-controlled account:</strong> your name, email address, role, office assignment, password and access status can only be changed by the system administrator.</div>
+  </div></section>`;
+ }else{
+  target.innerHTML=`<section class="card"><div class="card-head"><div><h2>System Preferences</h2><p>Simple personal display and notification settings.</p></div></div><div class="card-body">
+   <div class="setting-row"><div class="setting-copy"><strong>Deadline reminders</strong><span>Show reminders for correspondence approaching its office deadline.</span></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+   <div class="setting-row"><div class="setting-copy"><strong>Overdue alerts</strong><span>Highlight overdue correspondence requiring attention from your office.</span></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+   <div class="setting-row"><div class="setting-copy"><strong>Compact list view</strong><span>Use slightly tighter spacing when browsing correspondence lists.</span></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+   <div style="display:flex;justify-content:flex-end;padding-top:10px"><button class="btn primary" onclick="showToast('Preferences saved','Your preferences have been updated.')">Save Preferences</button></div>
+  </div></section>`;
+ }
+}
+
+function renderAdminDashboard(){
+ setBreadcrumb('Administration','Dashboard');
+ document.getElementById('screen').innerHTML=`<div class="page">
+  <div class="page-head">
+   <div><h1>Administrator Dashboard</h1><p>System-wide oversight of users, offices, correspondence activity and security records.</p></div>
+   <div style="display:flex;gap:8px"><button class="btn secondary" onclick="navigate('audit')">View Audit Log</button><button class="btn primary" onclick="navigate('adminUsers')">Manage Users & Offices</button></div>
+  </div>
+  <div class="notice"><svg><use href="#i-shield"/></svg><div><strong>Administrative oversight only</strong><p>The system administrator manages access, users, offices and accountability. Correspondence remains owned and actioned by offices.</p></div></div>
+  <section class="stats">
+   <article class="stat"><label>Active Correspondence</label><strong>348</strong><span>Across all offices</span></article>
+   <article class="stat amber"><label>Due Soon</label><strong>21</strong><span>Within 48 hours</span></article>
+   <article class="stat red"><label>Overdue</label><strong>14</strong><span>Across 5 offices</span></article>
+   <article class="stat"><label>Active Users</label><strong>45</strong><span>Across 8 offices</span></article>
+  </section>
+  <div class="admin-grid">
+   <div>
+    <section class="card" style="margin-bottom:12px"><div class="card-head"><div><h2>Office Overview</h2><p>High-level workload and overdue position across active offices.</p></div><button class="card-link" style="border:0;background:none" onclick="navigate('adminUsers')">Manage offices</button></div>
+     <div class="office-list">${offices.slice(0,5).map(o=>`<div class="office-row"><div class="office-name"><strong>${o.name}</strong><span>${o.users} active users</span></div><div class="cell"><label>Active</label><strong>${o.active}</strong></div><div class="cell"><label>Overdue</label><strong>${o.overdue}</strong></div><div><span class="badge ${o.overdue===0?'badge-good':o.overdue>=5?'badge-risk':'badge-watch'}">${o.overdue===0?'Healthy':o.overdue>=5?'Attention':'Watch'}</span></div></div>`).join('')}</div>
+    </section>
+    <section class="card"><div class="card-head"><div><h2>Recent System Activity</h2><p>Latest accountable actions across the system.</p></div><button class="card-link" style="border:0;background:none" onclick="navigate('audit')">View all</button></div>
+     <div class="activity-list">${auditLogs.slice(0,4).map(l=>`<div class="activity"><div class="activity-icon ${l.type==='Security'?'icon-red':l.type==='Completed'?'icon-green':l.type==='Forwarded'?'icon-violet':'icon-blue'}"><svg><use href="#${l.type==='Security'?'i-shield':l.type==='Completed'?'i-check':l.type==='Forwarded'?'i-send':'i-file'}"/></svg></div><div><strong>${l.title}</strong><span>${l.ref} • ${l.office}</span></div><div class="ntime">${l.time}</div></div>`).join('')}</div>
+    </section>
+   </div>
+   <aside>
+    <section class="card" style="margin-bottom:12px"><div class="card-head"><div><h2>Quick Administration</h2><p>Common administrative actions.</p></div></div><div class="quick-actions">
+     <div class="quick-action" onclick="navigate('adminUsers')"><div class="quick-icon quick-blue"><svg><use href="#i-users"/></svg></div><div class="quick-copy"><strong>Manage Users & Offices</strong><span>Create accounts, assign roles and offices, reset passwords and control access.</span></div></div>
+     <div class="quick-action" onclick="navigate('audit')"><div class="quick-icon quick-violet"><svg><use href="#i-shield"/></svg></div><div class="quick-copy"><strong>Review Audit Log</strong><span>Inspect system-wide activity and security actions.</span></div></div>
+     <div class="quick-action" onclick="openStatus('Overdue')"><div class="quick-icon quick-amber"><svg><use href="#i-alert"/></svg></div><div class="quick-copy"><strong>Review Overdue Correspondence</strong><span>See overdue correspondence across the system.</span></div></div>
+    </div></section>
+    <section class="card"><div class="card-head"><div><h2>System Access Summary</h2><p>Current account status overview.</p></div></div><div class="quick-actions">
+     <div class="quick-action"><div class="quick-icon quick-blue"><svg><use href="#i-users"/></svg></div><div class="quick-copy"><strong>48 total accounts</strong><span>45 active and 3 inactive accounts.</span></div></div>
+     <div class="quick-action"><div class="quick-icon quick-violet"><svg><use href="#i-shield"/></svg></div><div class="quick-copy"><strong>3 administrators</strong><span>Users with full administrative access.</span></div></div>
+     <div class="quick-action"><div class="quick-icon quick-amber"><svg><use href="#i-office"/></svg></div><div class="quick-copy"><strong>8 active offices</strong><span>Available for routing and access.</span></div></div>
+    </div></section>
+   </aside>
+  </div>
+  ${pageFooter('Administrator-only system oversight')}
+ </div>`;
+}
+
+function renderAdminUsers(){
+ setBreadcrumb('Administration','Users & Offices');
+ document.getElementById('screen').innerHTML=`<div class="page">
+  <div class="page-head"><div><h1>Users & Offices</h1><p>Manage user accounts, passwords, roles, office assignments, access status and office records.</p></div><button class="btn primary" onclick="${state.adminTab==='users'?'openUserModal()':'openOfficeModal()'}"><svg><use href="#i-plus"/></svg>${state.adminTab==='users'?'Add User':'Add Office'}</button></div>
+  <div class="notice"><svg><use href="#i-shield"/></svg><div><strong>Administrator-only area</strong><p>Only system administrators may create accounts, reset passwords, change roles, change office assignments, activate or deactivate accounts, and manage access.</p></div></div>
+  <nav class="admin-tabs"><button class="tab ${state.adminTab==='users'?'active':''}" onclick="setAdminTab('users')">Users</button><button class="tab ${state.adminTab==='offices'?'active':''}" onclick="setAdminTab('offices')">Offices</button></nav>
+  <div id="adminManagementContent"></div>
+  ${pageFooter('Administrator-only management area')}
+ </div>`;
+ renderAdminManagementContent();
+}
+function setAdminTab(tab){state.adminTab=tab;renderAdminUsers()}
+function initials(name){return name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}
+function renderAdminManagementContent(){
+ const target=document.getElementById('adminManagementContent');
+ if(state.adminTab==='users'){
+  target.innerHTML=`<section class="stats">
+   <article class="stat"><label>Total Users</label><strong>48</strong><span>All system accounts</span></article>
+   <article class="stat"><label>Active Users</label><strong>45</strong><span>Can currently sign in</span></article>
+   <article class="stat"><label>Administrators</label><strong>3</strong><span>Full administrative access</span></article>
+   <article class="stat"><label>Offices Represented</label><strong>8</strong><span>Across the Ministry</span></article>
+  </section>
+  <section class="toolbar"><input id="adminUserSearch" placeholder="Search user by name, email or office..." oninput="refreshAdminUsers()"><select id="adminRoleFilter" onchange="refreshAdminUsers()"><option value="">All roles</option><option>Administrator</option><option>Office User</option></select><select id="adminOfficeFilter" onchange="refreshAdminUsers()"><option value="">All offices</option>${offices.map(o=>`<option>${o.name}</option>`).join('')}</select><select id="adminStatusFilter" onchange="refreshAdminUsers()"><option value="">Any status</option><option>Active</option><option>Inactive</option></select><button class="btn secondary" onclick="resetAdminUserFilters()">Reset</button></section>
+  <section class="card"><div class="card-head"><div><h2>System Users</h2><p>Login accounts and the offices they represent.</p></div><span id="adminUserCount" class="muted" style="font-size:8px"></span></div><div class="table-wrap"><table class="table"><thead><tr><th>User</th><th>Role</th><th>Office</th><th>Status</th><th>Last Login</th><th>Account Control</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div></section>`;
+  refreshAdminUsers();
+ }else{
+  target.innerHTML=`<section class="stats">
+   <article class="stat"><label>Total Offices</label><strong>8</strong><span>Registered in the system</span></article>
+   <article class="stat"><label>Active Offices</label><strong>8</strong><span>Currently operational</span></article>
+   <article class="stat"><label>Total Users</label><strong>48</strong><span>Across all offices</span></article>
+   <article class="stat"><label>Active Correspondence</label><strong>348</strong><span>Across authorised offices</span></article>
+  </section>
+  <section class="toolbar" style="grid-template-columns:minmax(240px,1.5fr) 180px auto"><input id="adminOfficeSearch" placeholder="Search office by name or code..." oninput="refreshAdminOffices()"><select id="adminOfficeStatus" onchange="refreshAdminOffices()"><option value="">Any status</option><option>Active</option><option>Inactive</option></select><button class="btn secondary" onclick="resetAdminOfficeFilters()">Reset</button></section>
+  <section class="card"><div class="card-head"><div><h2>Ministry Offices</h2><p>Office records used for correspondence routing and visibility.</p></div><span id="adminOfficeCount" class="muted" style="font-size:8px"></span></div><div class="table-wrap"><table class="table"><thead><tr><th>Office</th><th>Code</th><th>Users</th><th>Active Correspondence</th><th>Status</th><th>Action</th></tr></thead><tbody id="adminOfficesBody"></tbody></table></div></section>`;
+  refreshAdminOffices();
+ }
+}
+function refreshAdminUsers(){
+ const q=(document.getElementById('adminUserSearch')?.value||'').toLowerCase(),role=document.getElementById('adminRoleFilter')?.value||'',office=document.getElementById('adminOfficeFilter')?.value||'',status=document.getElementById('adminStatusFilter')?.value||'';
+ const filtered=users.filter(u=>(!q||[u.name,u.email,u.office].join(' ').toLowerCase().includes(q))&&(!role||u.role===role)&&(!office||u.office===office)&&(!status||u.status===status));
+ document.getElementById('adminUserCount').textContent=`${filtered.length} user${filtered.length===1?'':'s'} shown`;
+ document.getElementById('adminUsersBody').innerHTML=filtered.map(u=>`<tr><td><div class="user-cell"><div class="mini-avatar">${initials(u.name)}</div><div><strong>${u.name}</strong><span>${u.email}</span></div></div></td><td><span class="badge ${u.role==='Administrator'?'overdue':'awaiting'}">${u.role}</span></td><td>${u.office}</td><td><span class="badge ${u.status==='Active'?'completed':'registered'}">${u.status}</span></td><td>${u.last}</td><td><button class="action-btn" onclick="openUserModal('${u.name}')">Manage</button></td></tr>`).join('');
+}
+function resetAdminUserFilters(){['adminUserSearch','adminRoleFilter','adminOfficeFilter','adminStatusFilter'].forEach(id=>document.getElementById(id).value='');refreshAdminUsers()}
+function refreshAdminOffices(){
+ const q=(document.getElementById('adminOfficeSearch')?.value||'').toLowerCase(),status=document.getElementById('adminOfficeStatus')?.value||'';
+ const filtered=offices.filter(o=>(!q||[o.name,o.code].join(' ').toLowerCase().includes(q))&&(!status||o.status===status));
+ document.getElementById('adminOfficeCount').textContent=`${filtered.length} office${filtered.length===1?'':'s'} shown`;
+ document.getElementById('adminOfficesBody').innerHTML=filtered.map(o=>`<tr><td><strong>${o.name}</strong></td><td>${o.code}</td><td>${o.users}</td><td>${o.active}</td><td><span class="badge completed">${o.status}</span></td><td><button class="action-btn" onclick="openOfficeModal('${o.name}')">Edit</button></td></tr>`).join('');
+}
+function resetAdminOfficeFilters(){['adminOfficeSearch','adminOfficeStatus'].forEach(id=>document.getElementById(id).value='');refreshAdminOffices()}
+function openUserModal(name=''){
+ openModal(name?'Manage User Account':'Add User',`<div class="grid-2"><div class="field"><label>Full Name</label><input value="${name}"></div><div class="field"><label>Email Address</label><input value="${name?name.toLowerCase().replaceAll(' ','.')+'@mrh.gov.gh':''}" placeholder="name@mrh.gov.gh"></div></div><div class="grid-2"><div class="field"><label>Role</label><select><option>Office User</option><option>Administrator</option></select></div><div class="field"><label>Office Assignment</label><select>${offices.map(o=>`<option>${o.name}</option>`).join('')}</select></div></div><div class="grid-2"><div class="field"><label>Account Status</label><select><option>Active</option><option>Inactive</option></select></div><div class="field"><label>Temporary Password</label><input type="password" placeholder="Set or reset password"></div></div><div class="office-note"><strong>Administrator control:</strong> regular users cannot change these fields themselves.</div>`,
+ `<button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveAdminAccount()">Save Account</button>`);
+}
+function saveAdminAccount(){closeModal();showToast('Account saved','User account settings have been updated.')}
+function openOfficeModal(name=''){
+ openModal(name?'Edit Office':'Add Office',`<div class="field"><label>Office Name</label><input value="${name}"></div><div class="grid-2"><div class="field"><label>Office Code</label><input placeholder="e.g. LEG"></div><div class="field"><label>Status</label><select><option>Active</option><option>Inactive</option></select></div></div>`,
+ `<button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveOffice()">Save Office</button>`);
+}
+function saveOffice(){closeModal();showToast('Office saved','Office settings have been updated.')}
+
+function renderAudit(){
+ setBreadcrumb('Administration','Audit Log');
+ document.getElementById('screen').innerHTML=`<div class="page">
+  <div class="page-head"><div><h1>System Audit Log</h1><p>Review accountable actions performed across the correspondence system.</p></div><button class="btn secondary" onclick="showToast('Export prepared','The audit log export has been prepared.')">Export Audit Log</button></div>
+  <div class="notice"><svg><use href="#i-shield"/></svg><div><strong>Administrator-only security record</strong><p>This page provides a system-wide record of actions. Individual correspondence history remains on each correspondence detail screen.</p></div></div>
+  <section class="stats">
+   <article class="stat"><label>Actions Today</label><strong>126</strong><span>Across all authorised offices</span></article>
+   <article class="stat"><label>Correspondence Updates</label><strong>84</strong><span>Stage, status and routing changes</span></article>
+   <article class="stat"><label>Security Actions</label><strong>7</strong><span>Account and access changes</span></article>
+   <article class="stat"><label>Active Offices</label><strong>8</strong><span>Generating audit records</span></article>
+  </section>
+  <section class="toolbar"><input id="auditSearch" placeholder="Search by user, office, reference or action..." oninput="refreshAudit()"><select id="auditAction" onchange="refreshAudit()"><option value="">All action types</option><option>Registered</option><option>Forwarded</option><option>Stage Updated</option><option>Completed</option><option>Security</option></select><select id="auditOffice" onchange="refreshAudit()"><option value="">All offices</option>${offices.map(o=>`<option>${o.name}</option>`).join('')}<option>ICT Directorate</option></select><select id="auditDate" onchange="refreshAudit()"><option value="">Any date</option><option>Today</option><option>Yesterday</option></select><button class="btn secondary" onclick="resetAudit()">Reset</button></section>
+  <section class="card"><div class="card-head"><div><h2>Audit Activity</h2><p>Every entry identifies the action, office, user account and time.</p></div><span id="auditCount" class="muted" style="font-size:8px"></span></div><div class="log-list" id="auditList"></div></section>
+  ${pageFooter('Administrator-only audit record')}
+ </div>`;
+ refreshAudit();
+}
+function auditIcon(type){return {'Registered':['i-file','icon-register'],'Forwarded':['i-send','icon-forward2'],'Stage Updated':['i-edit','icon-update'],'Completed':['i-check','icon-complete2'],'Security':['i-shield','icon-security']}[type]||['i-clock','icon-register']}
+function refreshAudit(){
+ const q=(document.getElementById('auditSearch')?.value||'').toLowerCase(),action=document.getElementById('auditAction')?.value||'',office=document.getElementById('auditOffice')?.value||'',date=document.getElementById('auditDate')?.value||'';
+ const filtered=auditLogs.filter(l=>(!q||[l.title,l.desc,l.ref,l.user,l.office].join(' ').toLowerCase().includes(q))&&(!action||l.type===action)&&(!office||l.office===office)&&(!date||l.date===date));
+ document.getElementById('auditCount').textContent=`${filtered.length} activit${filtered.length===1?'y':'ies'} shown`;
+ document.getElementById('auditList').innerHTML=filtered.length?filtered.map(l=>{const [icon,cls]=auditIcon(l.type);return `<article class="log-item"><div class="log-icon ${cls}"><svg><use href="#${icon}"/></svg></div><div><div class="action-title">${l.title}</div><div class="action-desc">${l.desc}</div></div><div class="log-cell user-cell-log"><label>Recorded By</label><strong>${l.user}</strong><span>${l.role}</span></div><div class="log-cell office-cell"><label>Office</label><span class="badge ${l.role==='Administrator'?'overdue':'progress'}">${l.office}</span></div><div class="log-cell time-cell-log"><label>Date & Time</label><strong>${l.time}</strong></div></article>`}).join(''):`<div class="empty"><strong>No audit records found</strong><p>Try changing the search or filters.</p></div>`;
+}
+function resetAudit(){['auditSearch','auditAction','auditOffice','auditDate'].forEach(id=>document.getElementById(id).value='');refreshAudit()}
+
+function renderDenied(){
+ setBreadcrumb('Security','Access Denied');
+ document.getElementById('screen').innerHTML=`<div class="denied-wrap"><article class="denied-card"><div class="denied-top"><div class="lock-icon"><svg><use href="#i-lock"/></svg></div><h1>Access Denied</h1><p>You do not have permission to view this area of the correspondence system.</p></div><div class="denied-body"><div class="info-box"><label>Restricted Area</label><strong>Role-protected system function</strong><span>Administrative functions such as user management, password resets, role changes and system-wide audit access are limited to authorised administrators.</span></div><div class="notice"><svg><use href="#i-shield"/></svg><div><strong>Your account remains secure and active</strong><p>No changes have been made to your account. This attempted access may be recorded for accountability.</p></div></div><div style="display:flex;justify-content:center;gap:8px"><button class="btn primary" onclick="navigate('${state.role==='admin'?'adminDashboard':'dashboard'}')">Return to Dashboard</button><button class="btn secondary" onclick="openStatus('All')">View Correspondence</button></div></div></article></div>`;
+}
+
+function globalSearchGo(){
+ const q=document.getElementById('globalSearch').value.trim();
+ if(!q)return;
+ state.currentStatus='All';
+ navigate('all');
+ setTimeout(()=>{document.getElementById('corrSearch').value=q;refreshAllList()},0);
+}
+
+function openModal(title,body,actions){
+ document.getElementById('modalTitle').textContent=title;
+ document.getElementById('modalBody').innerHTML=body;
+ document.getElementById('modalActions').innerHTML=actions;
+ document.getElementById('modalBackdrop').classList.add('open');
+}
+function closeModal(){document.getElementById('modalBackdrop').classList.remove('open')}
+document.getElementById('modalBackdrop').addEventListener('click',e=>{if(e.target.id==='modalBackdrop')closeModal()});
+
+function showToast(title,message){
+ document.getElementById('toastTitle').textContent=title;
+ document.getElementById('toastMessage').textContent=message;
+ const t=document.getElementById('toast');
+ t.classList.add('show');
+ clearTimeout(window.__toastTimer);
+ window.__toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+</script>
+</body>
+</html>
