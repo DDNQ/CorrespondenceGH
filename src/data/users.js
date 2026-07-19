@@ -3,57 +3,87 @@ import { ROLES } from '../constants/roles'
 export const users = [
   {
     id: 'user-legal-office',
+    firstName: 'Ama',
+    middleName: '',
+    lastName: 'Mensah',
     fullName: 'Ama Mensah',
     email: 'ama.mensah@mrh.gov.gh',
+    emailGeneratedBySystem: false,
     password: 'Password123',
     role: ROLES.OFFICE_USER,
     officeId: 'office-legal',
     officeName: 'Legal Directorate',
+    phoneNumber: '',
     status: 'Active',
+    accountStatus: 'Active',
     lastLogin: 'Today, 8:05 AM',
   },
   {
     id: 'supervisor-legal-office',
+    firstName: 'Kwesi',
+    middleName: '',
+    lastName: 'Boateng',
     fullName: 'Kwesi Boateng',
     email: 'kwesi.boateng@mrh.gov.gh',
+    emailGeneratedBySystem: false,
     password: 'Password123',
     role: ROLES.OFFICE_SUPERVISOR,
     officeId: 'office-legal',
     officeName: 'Legal Directorate',
+    phoneNumber: '',
     status: 'Active',
+    accountStatus: 'Active',
     lastLogin: 'Today, 7:48 AM',
   },
   {
     id: 'admin-ict-office',
+    firstName: 'Esi',
+    middleName: '',
+    lastName: 'Owusu',
     fullName: 'Esi Owusu',
     email: 'esi.owusu@mrh.gov.gh',
+    emailGeneratedBySystem: false,
     password: 'Password123',
     role: ROLES.SYSTEM_ADMIN,
     officeId: 'office-ict',
     officeName: 'ICT Directorate',
+    phoneNumber: '',
     status: 'Active',
+    accountStatus: 'Active',
     lastLogin: 'Today, 7:32 AM',
   },
   {
     id: 'user-finance-office',
+    firstName: 'Grace',
+    middleName: '',
+    lastName: 'Arthur',
     fullName: 'Grace Arthur',
     email: 'grace.arthur@mrh.gov.gh',
+    emailGeneratedBySystem: false,
     password: 'Password123',
     role: ROLES.OFFICE_USER,
     officeId: 'office-finance',
     officeName: 'Finance Directorate',
+    phoneNumber: '',
     status: 'Active',
+    accountStatus: 'Active',
     lastLogin: 'Yesterday, 4:18 PM',
   },
   {
     id: 'supervisor-procurement-office',
+    firstName: 'Kojo',
+    middleName: '',
+    lastName: 'Asare',
     fullName: 'Kojo Asare',
     email: 'kojo.asare@mrh.gov.gh',
+    emailGeneratedBySystem: false,
     password: 'Password123',
     role: ROLES.OFFICE_SUPERVISOR,
     officeId: 'office-procurement',
     officeName: 'Procurement Directorate',
+    phoneNumber: '',
     status: 'Inactive',
+    accountStatus: 'Inactive',
     lastLogin: '14 Jul 2026, 11:40 AM',
   },
 ]
@@ -66,18 +96,7 @@ export const roleOptions = [
   { value: ROLES.SYSTEM_ADMIN, label: 'System Administrator' },
 ]
 
-let userRecords = users.map((user) => ({ ...user }))
-
 export function getUsers() {
-  return userRecords.map((user) => ({ ...user }))
-}
-
-export function saveUserRecord(userRecord) {
-  const existingIndex = userRecords.findIndex((user) => user.id === userRecord.id)
-
-  if (existingIndex >= 0) {
-    userRecords[existingIndex] = { ...userRecords[existingIndex], ...userRecord }
-  } else {
-    userRecords = [{ ...userRecord }, ...userRecords]
-  }
+  // TODO: Replace this seeded frontend-only user list with a backend GET /users endpoint.
+  return users.map((user) => ({ ...user }))
 }

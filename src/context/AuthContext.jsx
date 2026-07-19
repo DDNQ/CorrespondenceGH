@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 
-import { mockUsers } from '../data/mockUsers'
+import { users as seededUsers } from '../data/users'
 import {
   clearStoredAuthUser,
   getStoredAuthUser,
@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
     }
 
     const matchedUser =
-      mockUsers.find(
+      seededUsers.find(
         (user) =>
           normalizeEmail(user.email) === normalizedEmail && user.password === trimmedPassword,
       ) ?? null
@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
       throw new Error('Invalid email address or password')
     }
 
-    // TODO: Replace this temporary frontend authentication logic with the backend authentication API.
+    // TODO: Replace this temporary seeded frontend authentication logic with the backend authentication API.
     const authenticatedUser = {
       id: matchedUser.id,
       fullName: matchedUser.fullName,
