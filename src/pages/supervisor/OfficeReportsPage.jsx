@@ -1,5 +1,5 @@
 import { FileSpreadsheet, FileText, Info } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import EmptyState from '../../components/common/EmptyState'
@@ -13,20 +13,14 @@ import { getOfficeReportData } from '../../data/reports'
 import {
   calculateAcknowledgementRate,
   calculateAverageAcknowledgementTime,
-  calculateAverageTurnaroundTime,
-  calculateOverdueRate,
-  calculateProcessingRate,
-  calculateWorkEngagementRate,
 } from '../../utils/reportCalculations'
 
 const REPORT_TABS = [
   { id: 'office-summary', label: 'Office Summary' },
-  { id: 'processing-performance', label: 'Processing Performance' },
   { id: 'pending-ageing', label: 'Pending & Ageing' },
   { id: 'staff-contribution', label: 'Staff Contribution' },
-  { id: 'overdue', label: 'Overdue' },
-  { id: 'routing-bottlenecks', label: 'Routing & Bottlenecks' },
 ]
+const VALID_REPORT_TAB_IDS = REPORT_TABS.map((tab) => tab.id)
 
 const INITIAL_FILTERS = {
   period: 'This Month',
@@ -171,24 +165,6 @@ function OfficeReportsPage() {
     })
   }, [appliedFilters, snapshot])
 
-  const filteredOverdueItems = useMemo(() => {
-    const items = snapshot?.overdue?.items ?? []
-
-    return items.filter((item) => {
-      const matchesDocumentType =
-        appliedFilters.documentType === 'All document types' ||
-        item.documentType === appliedFilters.documentType
-      const matchesPriority =
-        appliedFilters.priority === 'All priorities' ||
-        item.priority === appliedFilters.priority
-      const matchesStage =
-        appliedFilters.stage === 'All stages' ||
-        item.currentStage === appliedFilters.stage
-
-      return matchesDocumentType && matchesPriority && matchesStage
-    })
-  }, [appliedFilters, snapshot])
-
   const filteredStaffContribution = useMemo(() => {
     const items = snapshot?.staffContribution ?? []
 
@@ -201,68 +177,11 @@ function OfficeReportsPage() {
     )
   }, [appliedFilters.contributor, snapshot])
 
-  const overdueTabFilters = useMemo(
-    () => ({
-      priorities: ['All priorities', 'Normal', 'High', 'Urgent'],
-      durations: ['All overdue durations', '1-2 days', '3-5 days', 'More than 5 days'],
-      followUpStatuses: [
-        'All follow-up statuses',
-        'Awaiting final legal concurrence',
-        'Reminder issued',
-        'Follow-up required',
-        'Supervisor follow-up planned',
-      ],
-    }),
-    [],
-  )
-  const [overdueFilters, setOverdueFilters] = useState({
-    priority: 'All priorities',
-    duration: 'All overdue durations',
-    followUpStatus: 'All follow-up statuses',
-  })
-
-  const visibleOverdueItems = useMemo(
-    () =>
-      filteredOverdueItems.filter((item) => {
-        const matchesPriority =
-          overdueFilters.priority === 'All priorities' ||
-          item.priority === overdueFilters.priority
-        const matchesDuration =
-          overdueFilters.duration === 'All overdue durations' ||
-          (overdueFilters.duration === '1-2 days' &&
-            item.daysOverdueValue >= 1 &&
-            item.daysOverdueValue <= 2) ||
-          (overdueFilters.duration === '3-5 days' &&
-            item.daysOverdueValue >= 3 &&
-            item.daysOverdueValue <= 5) ||
-          (overdueFilters.duration === 'More than 5 days' &&
-            item.daysOverdueValue > 5)
-        const matchesFollowUp =
-          overdueFilters.followUpStatus === 'All follow-up statuses' ||
-          item.followUpStatus === overdueFilters.followUpStatus
-
-        return matchesPriority && matchesDuration && matchesFollowUp
-      }),
-    [filteredOverdueItems, overdueFilters],
-  )
-
-  const derivedSummary = useMemo(() => {
+  const acknowledgementSummary = useMemo(() => {
     if (!snapshot) {
       return null
     }
 
-    const processingRate = calculateProcessingRate(
-      snapshot.summary.completed,
-      snapshot.summary.received,
-    )
-    const workEngagementRate = calculateWorkEngagementRate(
-      snapshot.summary.workedOn,
-      snapshot.summary.received,
-    )
-    const overdueRate = calculateOverdueRate(
-      snapshot.summary.overdue,
-      snapshot.summary.requiringAction,
-    )
     const acknowledgementRecords = snapshot.receiptAcknowledgements ?? []
     const acknowledged = acknowledgementRecords.filter(
       (item) => item.receiptStatus === 'Acknowledged',
@@ -278,29 +197,27 @@ function OfficeReportsPage() {
       calculateAverageAcknowledgementTime(acknowledgementRecords)
     const longestAcknowledgementMinutes =
       getLongestAcknowledgementDelay(acknowledgementRecords)
-    const averageTurnaroundTime = calculateAverageTurnaroundTime(
-      snapshot.performanceByMonth.map((item) => ({
-        turnaroundDays: item.averageTurnaroundDays,
-      })),
-    )
-    const officeStageCompletionRate = calculateProcessingRate(
-      snapshot.summary.completed,
-      snapshot.summary.workedOn,
-    )
 
     return {
-      processingRate,
-      workEngagementRate,
-      overdueRate,
       acknowledgementRate,
       averageAcknowledgementMinutes,
       longestAcknowledgementMinutes,
-      averageTurnaroundTime,
-      officeStageCompletionRate,
       acknowledged,
       pending,
     }
   }, [snapshot])
+
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab')
+
+    if (!requestedTab || VALID_REPORT_TAB_IDS.includes(requestedTab)) {
+      return
+    }
+
+    const nextSearchParams = new URLSearchParams(searchParams)
+    nextSearchParams.set('tab', REPORT_TABS[0].id)
+    setSearchParams(nextSearchParams, { replace: true })
+  }, [searchParams, setSearchParams])
 
   const handleTabChange = (tabId) => {
     const nextSearchParams = new URLSearchParams(searchParams)
@@ -309,13 +226,12 @@ function OfficeReportsPage() {
   }
 
   const handleExport = (format) => {
-    // TODO: Replace this toast-based placeholder with secure PDF export generation.
-    // TODO: Replace this toast-based placeholder with secure Excel export generation.
     showToast({
       title:
         format === 'pdf'
           ? 'PDF report export prepared.'
           : 'Excel report export prepared.',
+      message: 'Includes Office Summary, Pending & Ageing, and Staff Contribution.',
     })
   }
 
@@ -326,7 +242,7 @@ function OfficeReportsPage() {
       <div className="report-page-content">
         <PageHeader
           title={`${baseOfficeName} Reports`}
-          description="Review correspondence activity and processing performance for your office."
+          description="Review correspondence activity for your office."
           actions={
             <div className="split-actions reports-page__actions">
               <button
@@ -440,12 +356,6 @@ function OfficeReportsPage() {
               tone="red"
             />
             <ReportMetricCard
-              label="Processing Rate"
-              value={formatPercent(derivedSummary.processingRate)}
-              description="Completed by office divided by received"
-              tone="blue"
-            />
-            <ReportMetricCard
               label="Average Turnaround Time"
               value={formatDays(snapshot.summary.averageTurnaroundDays)}
               description="Average time to complete office work"
@@ -461,23 +371,23 @@ function OfficeReportsPage() {
                 </div>
                 <div className="metric-card">
                   <p className="data-label">Acknowledged</p>
-                  <h3>{derivedSummary.acknowledged}</h3>
+                  <h3>{acknowledgementSummary.acknowledged}</h3>
                 </div>
                 <div className="metric-card">
                   <p className="data-label">Awaiting Acknowledgement</p>
-                  <h3>{derivedSummary.pending}</h3>
+                  <h3>{acknowledgementSummary.pending}</h3>
                 </div>
                 <div className="metric-card">
                   <p className="data-label">Acknowledgement Rate</p>
-                  <h3>{formatPercent(derivedSummary.acknowledgementRate)}</h3>
+                  <h3>{formatPercent(acknowledgementSummary.acknowledgementRate)}</h3>
                 </div>
                 <div className="metric-card">
                   <p className="data-label">Average Acknowledgement Time</p>
-                  <h3>{formatMinutes(derivedSummary.averageAcknowledgementMinutes)}</h3>
+                  <h3>{formatMinutes(acknowledgementSummary.averageAcknowledgementMinutes)}</h3>
                 </div>
                 <div className="metric-card">
                   <p className="data-label">Longest Acknowledgement Delay</p>
-                  <h3>{formatMinutes(derivedSummary.longestAcknowledgementMinutes)}</h3>
+                  <h3>{formatMinutes(acknowledgementSummary.longestAcknowledgementMinutes)}</h3>
                 </div>
               </div>
             </SectionCard>
@@ -552,81 +462,6 @@ function OfficeReportsPage() {
               </p>
             </SectionCard>
           </div>
-        </div>
-      ) : null}
-
-      {snapshot && activeTab === 'processing-performance' ? (
-        <div
-          id="report-panel-processing-performance"
-          role="tabpanel"
-          aria-labelledby="report-tab-processing-performance"
-          className="report-tab-panel"
-        >
-          <section className="report-kpi-grid report-kpi-grid--performance">
-            <ReportMetricCard
-              label="Processing Rate"
-              value={formatPercent(derivedSummary.processingRate)}
-              description="Completed by office divided by received"
-              tone="blue"
-            />
-            <ReportMetricCard
-              label="Work Engagement Rate"
-              value={formatPercent(derivedSummary.workEngagementRate)}
-              description="Worked on divided by received"
-              tone="green"
-            />
-            <ReportMetricCard
-              label="Overdue Rate"
-              value={formatPercent(derivedSummary.overdueRate)}
-              description="Overdue divided by requiring action"
-              tone="amber"
-            />
-            <ReportMetricCard
-              label="Average Turnaround Time"
-              value={formatDays(derivedSummary.averageTurnaroundTime)}
-              description="Average office turnaround"
-            />
-            <ReportMetricCard
-              label="Median Turnaround Time"
-              value={formatDays(snapshot.summary.medianTurnaroundDays)}
-              description="Median office turnaround"
-            />
-            <ReportMetricCard
-              label="Office Stage Completion Rate"
-              value={formatPercent(derivedSummary.officeStageCompletionRate)}
-              description="Completed by office divided by worked on"
-              tone="blue"
-            />
-          </section>
-
-          <SectionCard title="Performance Trend" description="Monthly processing, engagement, overdue, turnaround, and acknowledgement performance." className="report-section-card">
-            <div className="table-card">
-              <table className="report-table report-table--performance">
-                <thead>
-                  <tr>
-                    <th>Month</th>
-                    <th>Processing Rate</th>
-                    <th>Work Engagement Rate</th>
-                    <th>Overdue Rate</th>
-                    <th>Average Turnaround Time</th>
-                    <th>Acknowledgement Rate</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {snapshot.performanceByMonth.map((item) => (
-                    <tr key={item.month}>
-                      <td>{item.month}</td>
-                      <td>{formatPercent(calculateProcessingRate(item.completed, item.received))}</td>
-                      <td>{formatPercent(calculateWorkEngagementRate(item.workedOn, item.received))}</td>
-                      <td>{formatPercent(calculateOverdueRate(Math.max(1, Math.round(item.received * 0.07)), Math.max(1, item.workedOn - item.completed + 6)))}</td>
-                      <td>{formatDays(item.averageTurnaroundDays)}</td>
-                      <td>{formatPercent(item.acknowledgementRate)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </SectionCard>
         </div>
       ) : null}
 
@@ -776,271 +611,6 @@ function OfficeReportsPage() {
           </SectionCard>
         </div>
       ) : null}
-
-      {snapshot && activeTab === 'overdue' ? (
-        <div
-          id="report-panel-overdue"
-          role="tabpanel"
-          aria-labelledby="report-tab-overdue"
-          className="report-tab-panel"
-        >
-          <section className="report-kpi-grid report-kpi-grid--overdue">
-            <ReportMetricCard
-              label="Total Overdue"
-              value={snapshot.overdue.summary.total}
-              description="Records past office deadline"
-              tone="red"
-            />
-            <ReportMetricCard
-              label="Average Days Overdue"
-              value={formatDays(snapshot.overdue.summary.averageDaysOverdue)}
-              description="Across overdue records"
-              tone="blue"
-            />
-            <ReportMetricCard
-              label="Urgent Overdue"
-              value={snapshot.overdue.summary.urgentOverdue}
-              description="Urgent records needing response"
-              tone="red"
-            />
-            <ReportMetricCard
-              label="Follow-up Required"
-              value={snapshot.overdue.summary.followUpRequired}
-              description="Records requiring follow-up action"
-              tone="amber"
-            />
-          </section>
-
-          <SectionCard title="Overdue Filters" description="Refine overdue records in the current office report." className="report-section-card">
-            <div className="reports-overdue-filters overdue-filter-grid">
-              <div className="form-field">
-                <label htmlFor="overdue-priority" className="form-field__label">
-                  Priority
-                </label>
-                <select
-                  id="overdue-priority"
-                  value={overdueFilters.priority}
-                  onChange={(event) =>
-                    setOverdueFilters((current) => ({ ...current, priority: event.target.value }))
-                  }
-                >
-                  {overdueTabFilters.priorities.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="overdue-duration" className="form-field__label">
-                  Overdue Duration
-                </label>
-                <select
-                  id="overdue-duration"
-                  value={overdueFilters.duration}
-                  onChange={(event) =>
-                    setOverdueFilters((current) => ({ ...current, duration: event.target.value }))
-                  }
-                >
-                  {overdueTabFilters.durations.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="overdue-follow-up" className="form-field__label">
-                  Follow-up Status
-                </label>
-                <select
-                  id="overdue-follow-up"
-                  value={overdueFilters.followUpStatus}
-                  onChange={(event) =>
-                    setOverdueFilters((current) => ({
-                      ...current,
-                      followUpStatus: event.target.value,
-                    }))
-                  }
-                >
-                  {overdueTabFilters.followUpStatuses.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard title="Overdue Detail" description="Overdue correspondence requiring office follow-up." className="report-section-card">
-            {visibleOverdueItems.length ? (
-              <div className="table-card">
-                <table className="report-table report-table--overdue">
-                  <colgroup>
-                    <col className="report-col--reference" />
-                    <col className="report-col--subject" />
-                    <col className="report-col--priority" />
-                    <col className="report-col--stage" />
-                    <col className="report-col--deadline" />
-                    <col className="report-col--days-overdue" />
-                    <col className="report-col--last-action" />
-                    <col className="report-col--person" />
-                    <col className="report-col--delay-reason" />
-                    <col className="report-col--follow-up" />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th>Reference</th>
-                      <th>Subject</th>
-                      <th>Priority</th>
-                      <th>Current Stage</th>
-                      <th>Deadline</th>
-                      <th>Days Overdue</th>
-                      <th>Last Action</th>
-                      <th>Last Person Who Acted</th>
-                      <th>Reason for Delay</th>
-                      <th>Follow-up Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleOverdueItems.map((item) => (
-                      <tr key={item.reference}>
-                        <td>{item.reference}</td>
-                        <td>{item.subject}</td>
-                        <td>{item.priority}</td>
-                        <td>{item.currentStage}</td>
-                        <td>{item.deadline}</td>
-                        <td className="report-time-cell report-time-cell--overdue">{item.daysOverdue}</td>
-                        <td>{item.lastAction}</td>
-                        <td>{item.lastPerson}</td>
-                        <td>{item.delayReason}</td>
-                        <td>{item.followUpStatus}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <EmptyState
-                title="No report data available"
-                description="No correspondence activity was recorded for the selected reporting period."
-              />
-            )}
-          </SectionCard>
-        </div>
-      ) : null}
-
-      {snapshot && activeTab === 'routing-bottlenecks' ? (
-        <div
-          id="report-panel-routing-bottlenecks"
-          role="tabpanel"
-          aria-labelledby="report-tab-routing-bottlenecks"
-          className="report-tab-panel"
-        >
-          <div className="routing-report-grid">
-            <SectionCard title="Incoming Routing" description="Source offices routing correspondence into this office." className="report-section-card">
-              <div className="table-card">
-                <table className="report-table report-table--routing">
-                  <thead>
-                    <tr>
-                      <th>Originating Office</th>
-                      <th>Records Received</th>
-                      <th>Average Acknowledgement Time</th>
-                      <th>Average Processing Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {snapshot.routing.incomingRouting.map((item) => (
-                      <tr key={item.office}>
-                        <td>{item.office}</td>
-                        <td>{item.recordsReceived}</td>
-                        <td>{item.averageAcknowledgementTime}</td>
-                        <td>{item.averageProcessingTime}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Outgoing Routing" description="Destination offices after current office action." className="report-section-card">
-              <div className="table-card">
-                <table className="report-table report-table--routing">
-                  <thead>
-                    <tr>
-                      <th>Destination Office</th>
-                      <th>Records Forwarded</th>
-                      <th>Returned Records</th>
-                      <th>Average Time Before Forwarding</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {snapshot.routing.outgoingRouting.map((item) => (
-                      <tr key={item.office}>
-                        <td>{item.office}</td>
-                        <td>{item.recordsForwarded}</td>
-                        <td>{item.returnedRecords}</td>
-                        <td>{item.averageTimeBeforeForwarding}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </SectionCard>
-          </div>
-
-          <div className="routing-report-grid">
-            <SectionCard title="Bottleneck Stages" description="Stages with the highest average time and overdue volume." className="report-section-card">
-              <div className="table-card">
-                <table className="report-table report-table--routing">
-                  <thead>
-                    <tr>
-                      <th>Stage</th>
-                      <th>Records Processed</th>
-                      <th>Average Time</th>
-                      <th>Overdue Records</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {snapshot.routing.bottlenecks.map((item) => (
-                      <tr key={item.stage}>
-                        <td>{item.stage}</td>
-                        <td>{item.recordsProcessed}</td>
-                        <td>{item.averageTime}</td>
-                        <td>{item.overdueRecords}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Returned or Reopened Records" description="Common return and reopening signals within the office workflow." className="report-section-card">
-              <div className="meta-grid returned-summary-grid">
-                <div className="metric-card">
-                  <p className="data-label">Total Returned</p>
-                  <h3>{snapshot.routing.returnedOrReopened.totalReturned}</h3>
-                </div>
-                <div className="metric-card">
-                  <p className="data-label">Total Reopened</p>
-                  <h3>{snapshot.routing.returnedOrReopened.totalReopened}</h3>
-                </div>
-                <div className="metric-card">
-                  <p className="data-label">Common Reason</p>
-                  <h3>{snapshot.routing.returnedOrReopened.commonReason}</h3>
-                </div>
-                <div className="metric-card">
-                  <p className="data-label">Affected Stages</p>
-                  <h3>{snapshot.routing.returnedOrReopened.affectedStages}</h3>
-                </div>
-              </div>
-            </SectionCard>
-          </div>
-        </div>
-        ) : null}
       </div>
     </section>
   )

@@ -7,30 +7,6 @@ function parseDateTime(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
-export function calculateProcessingRate(completed, received) {
-  if (!received) {
-    return 0
-  }
-
-  return (completed / received) * 100
-}
-
-export function calculateWorkEngagementRate(workedOn, received) {
-  if (!received) {
-    return 0
-  }
-
-  return (workedOn / received) * 100
-}
-
-export function calculateOverdueRate(overdue, requiringAction) {
-  if (!requiringAction) {
-    return 0
-  }
-
-  return (overdue / requiringAction) * 100
-}
-
 export function calculateAcknowledgementRate(acknowledged, received) {
   if (!received) {
     return 0
@@ -59,22 +35,6 @@ export function calculateAverageAcknowledgementTime(records) {
 
   return durations.reduce((total, current) => total + current, 0) / durations.length
 }
-
-export function calculateAverageTurnaroundTime(records) {
-  const values = records
-    .map((record) => {
-      const value = Number(record.turnaroundDays)
-      return Number.isFinite(value) ? value : null
-    })
-    .filter((value) => value !== null)
-
-  if (!values.length) {
-    return 0
-  }
-
-  return values.reduce((total, current) => total + current, 0) / values.length
-}
-
 export function calculateAgeingBand(arrivedAtCurrentOffice) {
   const arrivedAt = parseDateTime(arrivedAtCurrentOffice)
 

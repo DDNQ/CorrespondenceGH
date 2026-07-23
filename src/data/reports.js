@@ -39,12 +39,7 @@ const officeReportData = {
       'Awaiting legal assessment and routing decision',
       'Ready for forwarding',
     ],
-    contributorOptions: [
-      'Ama Mensah',
-      'Kojo Asare',
-      'Esi Boateng',
-      'Grace Arthur',
-    ],
+    contributorOptions: ['Ama Mensah', 'Kojo Asare', 'Esi Boateng', 'Grace Arthur'],
     periods: {
       'This Month': {
         summary: {
@@ -55,8 +50,6 @@ const officeReportData = {
           dueSoon: 7,
           overdue: 4,
           averageTurnaroundDays: 2.8,
-          medianTurnaroundDays: 2.4,
-          requiringAction: 31,
         },
         receiptAcknowledgements: [
           {
@@ -139,14 +132,6 @@ const officeReportData = {
           { month: 'Apr', received: 98, workedOn: 91, completed: 85 },
           { month: 'May', received: 111, workedOn: 103, completed: 90 },
           { month: 'Jun', received: 120, workedOn: 108, completed: 96 },
-        ],
-        performanceByMonth: [
-          { month: 'Jan', received: 84, workedOn: 76, completed: 69, averageTurnaroundDays: 3.1, acknowledgementRate: 88.2 },
-          { month: 'Feb', received: 91, workedOn: 83, completed: 74, averageTurnaroundDays: 3.0, acknowledgementRate: 89.6 },
-          { month: 'Mar', received: 102, workedOn: 93, completed: 82, averageTurnaroundDays: 2.9, acknowledgementRate: 90.4 },
-          { month: 'Apr', received: 98, workedOn: 91, completed: 85, averageTurnaroundDays: 2.8, acknowledgementRate: 91.1 },
-          { month: 'May', received: 111, workedOn: 103, completed: 90, averageTurnaroundDays: 2.8, acknowledgementRate: 92.0 },
-          { month: 'Jun', received: 120, workedOn: 108, completed: 96, averageTurnaroundDays: 2.8, acknowledgementRate: 92.9 },
         ],
         pendingAgeing: {
           bands: [
@@ -257,98 +242,6 @@ const officeReportData = {
             lastActivity: '14 Jul 2026, 11:45 AM',
           },
         ],
-        overdue: {
-          summary: {
-            total: 4,
-            averageDaysOverdue: 3.2,
-            urgentOverdue: 2,
-            followUpRequired: 3,
-          },
-          items: [
-            {
-              reference: 'MRH/MEM/2026/0061',
-              subject: 'Request for Legal Opinion on Contractor Dispute',
-              documentType: 'Memo',
-              priority: 'Urgent',
-              currentStage: 'Legal Opinion Preparation',
-              deadline: '14 Jul 2026',
-              daysOverdue: '4 days',
-              daysOverdueValue: 4,
-              lastAction: 'Stage review note added',
-              lastPerson: 'Grace Arthur',
-              delayReason: 'Supporting documents received late from Procurement Directorate.',
-              followUpStatus: 'Awaiting final legal concurrence',
-            },
-            {
-              reference: 'MRH/CON/2026/0074',
-              subject: 'Variation Approval Review',
-              documentType: 'Contract',
-              priority: 'High',
-              currentStage: 'Director Review',
-              deadline: '15 Jul 2026',
-              daysOverdue: '3 days',
-              daysOverdueValue: 3,
-              lastAction: 'Director briefing prepared',
-              lastPerson: 'Ama Mensah',
-              delayReason: 'Awaiting clarification on revised compensation schedule.',
-              followUpStatus: 'Reminder issued',
-            },
-            {
-              reference: 'MRH/LET/2026/0107',
-              subject: 'ROW Clarification Follow-up',
-              documentType: 'Letter',
-              priority: 'Normal',
-              currentStage: 'Awaiting legal assessment and routing decision',
-              deadline: '16 Jul 2026',
-              daysOverdue: '2 days',
-              daysOverdueValue: 2,
-              lastAction: 'Acknowledgement note recorded',
-              lastPerson: 'Kojo Asare',
-              delayReason: 'Originating office submitted the annex late.',
-              followUpStatus: 'Follow-up required',
-            },
-            {
-              reference: 'MRH/REP/2026/0086',
-              subject: 'Emergency Works Risk Review',
-              documentType: 'Report',
-              priority: 'Urgent',
-              currentStage: 'Contract Compliance Assessment',
-              deadline: '17 Jul 2026',
-              daysOverdue: '1 day',
-              daysOverdueValue: 1,
-              lastAction: 'Risk note drafted',
-              lastPerson: 'Esi Boateng',
-              delayReason: 'Pending decision on procurement exception route.',
-              followUpStatus: 'Supervisor follow-up planned',
-            },
-          ],
-        },
-        routing: {
-          incomingRouting: [
-            { office: 'Central Registry', recordsReceived: 18, averageAcknowledgementTime: '14 minutes', averageProcessingTime: '2.1 days' },
-            { office: 'Office of the Chief Director', recordsReceived: 11, averageAcknowledgementTime: '19 minutes', averageProcessingTime: '2.7 days' },
-            { office: 'Procurement Directorate', recordsReceived: 6, averageAcknowledgementTime: '23 minutes', averageProcessingTime: '3.0 days' },
-            { office: 'Finance Directorate', recordsReceived: 4, averageAcknowledgementTime: '17 minutes', averageProcessingTime: '2.4 days' },
-            { office: 'Highway Planning Directorate', recordsReceived: 3, averageAcknowledgementTime: '11 minutes', averageProcessingTime: '1.9 days' },
-          ],
-          outgoingRouting: [
-            { office: 'Office of the Chief Director', recordsForwarded: 17, returnedRecords: 2, averageTimeBeforeForwarding: '1.2 days' },
-            { office: 'Central Registry', recordsForwarded: 10, returnedRecords: 1, averageTimeBeforeForwarding: '0.9 days' },
-            { office: 'Finance Directorate', recordsForwarded: 8, returnedRecords: 1, averageTimeBeforeForwarding: '1.4 days' },
-          ],
-          bottlenecks: [
-            { stage: 'Initial Legal Review', recordsProcessed: 42, averageTime: '1.8 days', overdueRecords: 2 },
-            { stage: 'Director Review', recordsProcessed: 31, averageTime: '3.6 days', overdueRecords: 5 },
-            { stage: 'Legal Opinion Preparation', recordsProcessed: 20, averageTime: '4.2 days', overdueRecords: 4 },
-            { stage: 'Contract Compliance Assessment', recordsProcessed: 18, averageTime: '3.9 days', overdueRecords: 3 },
-          ],
-          returnedOrReopened: {
-            totalReturned: 5,
-            totalReopened: 3,
-            commonReason: 'Missing annexes from originating offices before final concurrence.',
-            affectedStages: 'Director Review, Contract Compliance Assessment',
-          },
-        },
       },
       'Last Month': {
         summary: {
@@ -359,8 +252,6 @@ const officeReportData = {
           dueSoon: 6,
           overdue: 3,
           averageTurnaroundDays: 2.9,
-          medianTurnaroundDays: 2.5,
-          requiringAction: 27,
         },
         receiptAcknowledgements: [
           {
@@ -404,14 +295,6 @@ const officeReportData = {
           { month: 'Apr', received: 104, workedOn: 96, completed: 86 },
           { month: 'May', received: 111, workedOn: 103, completed: 90 },
         ],
-        performanceByMonth: [
-          { month: 'Dec', received: 77, workedOn: 70, completed: 63, averageTurnaroundDays: 3.4, acknowledgementRate: 86.2 },
-          { month: 'Jan', received: 81, workedOn: 74, completed: 68, averageTurnaroundDays: 3.2, acknowledgementRate: 87.8 },
-          { month: 'Feb', received: 92, workedOn: 84, completed: 76, averageTurnaroundDays: 3.0, acknowledgementRate: 88.9 },
-          { month: 'Mar', received: 96, workedOn: 88, completed: 79, averageTurnaroundDays: 2.9, acknowledgementRate: 90.1 },
-          { month: 'Apr', received: 104, workedOn: 96, completed: 86, averageTurnaroundDays: 2.9, acknowledgementRate: 91.0 },
-          { month: 'May', received: 111, workedOn: 103, completed: 90, averageTurnaroundDays: 2.9, acknowledgementRate: 91.8 },
-        ],
         pendingAgeing: {
           bands: [
             { label: 'Less than 1 day', count: 3 },
@@ -442,33 +325,6 @@ const officeReportData = {
             lastActivity: '29 Jun 2026, 1:05 PM',
           },
         ],
-        overdue: {
-          summary: {
-            total: 3,
-            averageDaysOverdue: 2.7,
-            urgentOverdue: 1,
-            followUpRequired: 2,
-          },
-          items: [],
-        },
-        routing: {
-          incomingRouting: [
-            { office: 'Central Registry', recordsReceived: 16, averageAcknowledgementTime: '16 minutes', averageProcessingTime: '2.2 days' },
-          ],
-          outgoingRouting: [
-            { office: 'Office of the Chief Director', recordsForwarded: 15, returnedRecords: 1, averageTimeBeforeForwarding: '1.3 days' },
-          ],
-          bottlenecks: [
-            { stage: 'Initial Legal Review', recordsProcessed: 36, averageTime: '1.9 days', overdueRecords: 2 },
-            { stage: 'Director Review', recordsProcessed: 28, averageTime: '3.3 days', overdueRecords: 3 },
-          ],
-          returnedOrReopened: {
-            totalReturned: 4,
-            totalReopened: 2,
-            commonReason: 'Awaiting clarifying memo from originating office.',
-            affectedStages: 'Director Review',
-          },
-        },
       },
       'Last 3 Months': {
         summary: {
@@ -479,8 +335,6 @@ const officeReportData = {
           dueSoon: 15,
           overdue: 11,
           averageTurnaroundDays: 2.9,
-          medianTurnaroundDays: 2.5,
-          requiringAction: 69,
         },
         receiptAcknowledgements: [
           {
@@ -513,25 +367,8 @@ const officeReportData = {
           { month: 'May', received: 111, workedOn: 103, completed: 90 },
           { month: 'Jun', received: 120, workedOn: 108, completed: 96 },
         ],
-        performanceByMonth: [
-          { month: 'Apr', received: 98, workedOn: 91, completed: 85, averageTurnaroundDays: 2.8, acknowledgementRate: 91.1 },
-          { month: 'May', received: 111, workedOn: 103, completed: 90, averageTurnaroundDays: 2.8, acknowledgementRate: 92.0 },
-          { month: 'Jun', received: 120, workedOn: 108, completed: 96, averageTurnaroundDays: 2.8, acknowledgementRate: 92.9 },
-        ],
         pendingAgeing: { bands: [], items: [] },
         staffContribution: [],
-        overdue: { summary: { total: 11, averageDaysOverdue: 3.0, urgentOverdue: 4, followUpRequired: 7 }, items: [] },
-        routing: {
-          incomingRouting: [],
-          outgoingRouting: [],
-          bottlenecks: [],
-          returnedOrReopened: {
-            totalReturned: 12,
-            totalReopened: 7,
-            commonReason: 'Follow-up documentation was incomplete.',
-            affectedStages: 'Initial Legal Review, Director Review',
-          },
-        },
       },
       'Last 6 Months': {
         summary: {
@@ -541,9 +378,7 @@ const officeReportData = {
           pending: 110,
           dueSoon: 21,
           overdue: 18,
-          averageTurnaroundDays: 3.0,
-          medianTurnaroundDays: 2.6,
-          requiringAction: 128,
+          averageTurnaroundDays: 3,
         },
         receiptAcknowledgements: [],
         statusBreakdown: [],
@@ -556,28 +391,8 @@ const officeReportData = {
           { month: 'May', received: 111, workedOn: 103, completed: 90 },
           { month: 'Jun', received: 120, workedOn: 108, completed: 96 },
         ],
-        performanceByMonth: [
-          { month: 'Jan', received: 84, workedOn: 76, completed: 69, averageTurnaroundDays: 3.1, acknowledgementRate: 88.2 },
-          { month: 'Feb', received: 91, workedOn: 83, completed: 74, averageTurnaroundDays: 3.0, acknowledgementRate: 89.6 },
-          { month: 'Mar', received: 102, workedOn: 93, completed: 82, averageTurnaroundDays: 2.9, acknowledgementRate: 90.4 },
-          { month: 'Apr', received: 98, workedOn: 91, completed: 85, averageTurnaroundDays: 2.8, acknowledgementRate: 91.1 },
-          { month: 'May', received: 111, workedOn: 103, completed: 90, averageTurnaroundDays: 2.8, acknowledgementRate: 92.0 },
-          { month: 'Jun', received: 120, workedOn: 108, completed: 96, averageTurnaroundDays: 2.8, acknowledgementRate: 92.9 },
-        ],
         pendingAgeing: { bands: [], items: [] },
         staffContribution: [],
-        overdue: { summary: { total: 18, averageDaysOverdue: 3.4, urgentOverdue: 7, followUpRequired: 11 }, items: [] },
-        routing: {
-          incomingRouting: [],
-          outgoingRouting: [],
-          bottlenecks: [],
-          returnedOrReopened: {
-            totalReturned: 20,
-            totalReopened: 11,
-            commonReason: 'Directorate received incomplete annexes for review.',
-            affectedStages: 'Director Review, Legal Opinion Preparation',
-          },
-        },
       },
       'This Year': {
         summary: {
@@ -587,9 +402,7 @@ const officeReportData = {
           pending: 125,
           dueSoon: 24,
           overdue: 22,
-          averageTurnaroundDays: 3.0,
-          medianTurnaroundDays: 2.6,
-          requiringAction: 147,
+          averageTurnaroundDays: 3,
         },
         receiptAcknowledgements: [],
         statusBreakdown: [],
@@ -602,28 +415,8 @@ const officeReportData = {
           { month: 'May', received: 111, workedOn: 103, completed: 90 },
           { month: 'Jun', received: 120, workedOn: 108, completed: 96 },
         ],
-        performanceByMonth: [
-          { month: 'Jan', received: 84, workedOn: 76, completed: 69, averageTurnaroundDays: 3.1, acknowledgementRate: 88.2 },
-          { month: 'Feb', received: 91, workedOn: 83, completed: 74, averageTurnaroundDays: 3.0, acknowledgementRate: 89.6 },
-          { month: 'Mar', received: 102, workedOn: 93, completed: 82, averageTurnaroundDays: 2.9, acknowledgementRate: 90.4 },
-          { month: 'Apr', received: 98, workedOn: 91, completed: 85, averageTurnaroundDays: 2.8, acknowledgementRate: 91.1 },
-          { month: 'May', received: 111, workedOn: 103, completed: 90, averageTurnaroundDays: 2.8, acknowledgementRate: 92.0 },
-          { month: 'Jun', received: 120, workedOn: 108, completed: 96, averageTurnaroundDays: 2.8, acknowledgementRate: 92.9 },
-        ],
         pendingAgeing: { bands: [], items: [] },
         staffContribution: [],
-        overdue: { summary: { total: 22, averageDaysOverdue: 3.5, urgentOverdue: 8, followUpRequired: 13 }, items: [] },
-        routing: {
-          incomingRouting: [],
-          outgoingRouting: [],
-          bottlenecks: [],
-          returnedOrReopened: {
-            totalReturned: 23,
-            totalReopened: 12,
-            commonReason: 'Supporting documents were incomplete or late.',
-            affectedStages: 'Initial Legal Review, Director Review, Contract Compliance Assessment',
-          },
-        },
       },
     },
   },
