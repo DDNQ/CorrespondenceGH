@@ -10,28 +10,40 @@ import {
   Files,
   FolderCheck,
   Gauge,
-  Lock,
   Settings,
   Shield,
   UsersRound,
 } from 'lucide-react'
 
-import { ROLES } from '../constants/roles'
+import { USER_ROLES } from '../constants/roles'
+import {
+  buildSearchParamsForSidebarFilter,
+  getCorrespondenceSidebarFilters,
+  resolveCorrespondenceListView,
+} from './correspondenceListView.js'
 
-export const correspondenceStatusLinks = [
-  { label: 'All', to: '/correspondence?status=all', status: 'all', icon: Files },
-  { label: 'Registered', to: '/correspondence?status=registered', status: 'registered', icon: FileInput },
-  { label: 'Received', to: '/correspondence?status=received', status: 'received', icon: Bell },
-  { label: 'In Progress', to: '/correspondence?status=in-progress', status: 'in-progress', icon: FileClock },
-  { label: 'Awaiting Action', to: '/correspondence?status=awaiting-action', status: 'awaiting-action', icon: FileSearch },
-  { label: 'Forwarded', to: '/correspondence?status=forwarded', status: 'forwarded', icon: FileUp },
-  { label: 'Completed', to: '/correspondence?status=completed', status: 'completed', icon: FolderCheck },
-  { label: 'Filed', to: '/correspondence?status=filed', status: 'filed', icon: FileStack },
-  { label: 'Overdue', to: '/correspondence?status=overdue', status: 'overdue', icon: Bell },
-]
+const correspondenceStatusIcons = Object.freeze({
+  all: Files,
+  registered: FileInput,
+  received: Bell,
+  'in-progress': FileClock,
+  'awaiting-action': FileSearch,
+  forwarded: FileUp,
+  completed: FolderCheck,
+  filed: FileStack,
+  overdue: Bell,
+})
+
+export const correspondenceStatusLinks = getCorrespondenceSidebarFilters().map((filter) => ({
+  label: filter.label,
+  to: `/correspondence?${buildSearchParamsForSidebarFilter(filter.id).toString()}`,
+  status: filter.statusParam,
+  scope: filter.scope,
+  icon: correspondenceStatusIcons[filter.id],
+}))
 
 export const navigationByRole = {
-  [ROLES.OFFICE_USER]: {
+  [USER_ROLES.OFFICE_USER]: {
     primary: [{ label: 'Dashboard', to: '/dashboard', icon: Gauge }],
     sections: [
       {
@@ -47,7 +59,7 @@ export const navigationByRole = {
     ],
     footer: [{ label: 'Settings', to: '/settings', icon: Settings }],
   },
-  [ROLES.OFFICE_SUPERVISOR]: {
+  [USER_ROLES.SUPERVISOR]: {
     primary: [{ label: 'Dashboard', to: '/dashboard', icon: Gauge }],
     sections: [
       {
@@ -67,7 +79,7 @@ export const navigationByRole = {
     ],
     footer: [{ label: 'Settings', to: '/settings', icon: Settings }],
   },
-  [ROLES.SYSTEM_ADMIN]: {
+  [USER_ROLES.ADMIN]: {
     primary: [{ label: 'Dashboard', to: '/admin/dashboard', icon: Gauge }],
     sections: [
       {
@@ -80,11 +92,10 @@ export const navigationByRole = {
         title: 'Administration',
         items: [
           { label: 'Users & Offices', to: '/admin/users-offices', icon: UsersRound },
-          { label: 'Audit Log', to: '/admin/audit-log', icon: Lock },
         ],
       },
     ],
-    footer: [],
+    footer: [{ label: 'Settings', to: '/settings', icon: Settings }],
   },
 }
 
@@ -100,18 +111,14 @@ const pageTitles = new Map([
   ['/admin/audit-log', 'Audit Log'],
 ])
 
-const statusLabels = new Map(
-  correspondenceStatusLinks.map((link) => [link.status, `Correspondence / ${link.label}`]),
-)
-
 export function getPageLabel(pathname, searchParams) {
   if (pathname.startsWith('/correspondence/') && pathname !== '/correspondence/new') {
     return 'Correspondence / Details'
   }
 
   if (pathname === '/correspondence') {
-    const status = searchParams.get('status')
-    return statusLabels.get(status) ?? pageTitles.get(pathname) ?? 'Correspondence'
+    const viewState = resolveCorrespondenceListView(searchParams)
+    return `Correspondence / ${viewState.pageTitle.replace(/ Correspondence$/, '')}`
   }
 
   return pageTitles.get(pathname) ?? 'Correspondence Management System'

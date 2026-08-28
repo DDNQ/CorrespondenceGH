@@ -1,9 +1,12 @@
-import { addAuditLog } from './auditLogs'
+import { addAuditLog } from './auditLogs.js'
+import { USER_ROLES } from '../constants/roles.js'
+import { createMockCorrespondenceId } from '../utils/correspondence.js'
 
 const baseCorrespondence = [
   {
-    id: 'corr-0012',
+    id: 'mock-correspondence-001',
     reference: 'MRH/CON/2026/0012',
+    referenceNumber: 'MRH/CON/2026/0012',
     subject: 'Periodic Maintenance Contract for N1 Highway',
     documentType: 'Contract',
     sender: 'Ghana Highway Authority',
@@ -125,7 +128,7 @@ const baseCorrespondence = [
         office: 'Central Registry',
         officeId: 'office-registry',
         officeName: 'Central Registry',
-        role: 'OFFICE_USER',
+        role: USER_ROLES.OFFICE_USER,
         userId: 'user-grace-boateng',
         userName: 'Grace Boateng',
         timestamp: '12 Jul 2026, 10:12 AM',
@@ -142,7 +145,7 @@ const baseCorrespondence = [
         office: 'Central Registry',
         officeId: 'office-registry',
         officeName: 'Central Registry',
-        role: 'OFFICE_USER',
+        role: USER_ROLES.OFFICE_USER,
         userId: 'user-grace-boateng',
         userName: 'Grace Boateng',
         previousValue: 'Registered',
@@ -161,7 +164,7 @@ const baseCorrespondence = [
         office: 'Central Registry',
         officeId: 'office-registry',
         officeName: 'Central Registry',
-        role: 'OFFICE_USER',
+        role: USER_ROLES.OFFICE_USER,
         userId: 'user-grace-boateng',
         userName: 'Grace Boateng',
         previousValue: 'Central Registry',
@@ -180,7 +183,7 @@ const baseCorrespondence = [
         office: 'Legal Directorate',
         officeId: 'office-legal',
         officeName: 'Legal Directorate',
-        role: 'OFFICE_USER',
+        role: USER_ROLES.OFFICE_USER,
         userId: 'user-kojo-asare',
         userName: 'Kojo Asare',
         previousValue: 'Central Registry',
@@ -198,7 +201,7 @@ const baseCorrespondence = [
         office: 'Legal Directorate',
         officeId: 'office-legal',
         officeName: 'Legal Directorate',
-        role: 'OFFICE_SUPERVISOR',
+        role: USER_ROLES.SUPERVISOR,
         userId: 'user-ama-mensah',
         userName: 'Ama Mensah',
         previousValue: 'Initial classification',
@@ -241,8 +244,9 @@ const baseCorrespondence = [
     ],
   },
   {
-    id: 'corr-0088',
+    id: 'mock-correspondence-002',
     reference: 'MRH/LET/2026/0088',
+    referenceNumber: 'MRH/LET/2026/0088',
     subject: 'Road Safety Petition from Community Leaders',
     documentType: 'Letter',
     sender: 'N1 Corridor Community Leaders',
@@ -281,8 +285,9 @@ const baseCorrespondence = [
     notes: [],
   },
   {
-    id: 'corr-0061',
+    id: 'mock-correspondence-003',
     reference: 'MRH/MEM/2026/0061',
+    referenceNumber: 'MRH/MEM/2026/0061',
     subject: 'Request for Legal Opinion on Contractor Dispute',
     documentType: 'Memo',
     sender: 'Procurement Directorate',
@@ -329,8 +334,9 @@ const baseCorrespondence = [
     ],
   },
   {
-    id: 'corr-0031',
+    id: 'mock-correspondence-004',
     reference: 'MRH/REP/2026/0031',
+    referenceNumber: 'MRH/REP/2026/0031',
     subject: 'Structural Assessment of Bridge Rehabilitation Project',
     documentType: 'Report',
     sender: 'Highway Planning Directorate',
@@ -359,8 +365,9 @@ const baseCorrespondence = [
     notes: [],
   },
   {
-    id: 'corr-0017',
+    id: 'mock-correspondence-005',
     reference: 'MRH/CON/2026/0017',
+    referenceNumber: 'MRH/CON/2026/0017',
     subject: 'Consultancy Agreement for Feasibility Study',
     documentType: 'Contract',
     sender: 'Office of the Chief Director',
@@ -403,8 +410,9 @@ const baseCorrespondence = [
     notes: [],
   },
   {
-    id: 'corr-0049',
+    id: 'mock-correspondence-006',
     reference: 'MRH/MEM/2026/0049',
+    referenceNumber: 'MRH/MEM/2026/0049',
     subject: 'Clarification on Contract Variation Approval Procedure',
     documentType: 'Memo',
     sender: 'Finance Directorate',
@@ -433,8 +441,9 @@ const baseCorrespondence = [
     notes: [],
   },
   {
-    id: 'corr-0042',
+    id: 'mock-correspondence-007',
     reference: 'MRH/LET/2026/0042',
+    referenceNumber: 'MRH/LET/2026/0042',
     subject: 'Response to Request for Right-of-Way Clarification',
     documentType: 'Letter',
     sender: 'Survey and Mapping Division',
@@ -463,8 +472,9 @@ const baseCorrespondence = [
     notes: [],
   },
   {
-    id: 'corr-0018',
+    id: 'mock-correspondence-008',
     reference: 'MRH/REP/2026/0018',
+    referenceNumber: 'MRH/REP/2026/0018',
     subject: 'Quarterly Road Maintenance Performance Report',
     documentType: 'Report',
     sender: 'Highway Maintenance Directorate',
@@ -608,7 +618,9 @@ function getDocumentCode(documentType) {
 export function generateNextReference(documentType = 'Contract') {
   const currentYear = '2026'
   const matchingRecords = correspondenceRecords.filter((record) =>
-    record.reference.startsWith(`MRH/${getDocumentCode(documentType)}/${currentYear}/`),
+    (record.referenceNumber ?? record.reference).startsWith(
+      `MRH/${getDocumentCode(documentType)}/${currentYear}/`,
+    ),
   )
   const nextSequence = String(matchingRecords.length + 1).padStart(4, '0')
 
@@ -619,8 +631,9 @@ export function addCorrespondenceRecord(formValues, currentUser) {
   const reference = generateNextReference(formValues.documentType)
 
   const newRecord = {
-    id: `corr-${reference.split('/').pop()?.toLowerCase()}`,
+    id: createMockCorrespondenceId(),
     reference,
+    referenceNumber: reference,
     subject: formValues.subject,
     documentType: formValues.documentType,
     sender: formValues.sender,
@@ -818,6 +831,48 @@ export function completeCorrespondence(reference, currentUser) {
         },
         ...record.actions,
       ],
+    }
+  })
+}
+
+export function fileCorrespondence(reference, currentUser, filingNote = '') {
+  correspondenceRecords = correspondenceRecords.map((record) => {
+    if (record.reference !== reference) {
+      return record
+    }
+
+    return {
+      ...record,
+      status: 'Filed',
+      isFiled: true,
+      timeRemaining: 'Filed',
+      deadlineState: 'normal',
+      currentStage: 'Correspondence filed',
+      actions: [
+        {
+          type: 'Filed',
+          title: 'Correspondence filed',
+          description: `Recorded by ${currentUser.fullName} on behalf of ${currentUser.officeName}.`,
+          actor: currentUser.fullName,
+          office: currentUser.officeName,
+          role: currentUser.role,
+          timestamp: '16 Jul 2026, 12:10 PM',
+          note: filingNote.trim(),
+        },
+        ...record.actions,
+      ],
+      notes: filingNote.trim()
+        ? [
+            {
+              id: `note-file-${Date.now()}`,
+              author: currentUser.fullName,
+              office: currentUser.officeName,
+              date: '16 Jul 2026, 12:10 PM',
+              body: filingNote.trim(),
+            },
+            ...record.notes,
+          ]
+        : record.notes,
     }
   })
 }

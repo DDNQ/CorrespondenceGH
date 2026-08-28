@@ -13,7 +13,7 @@ The prototype is a visual and workflow reference only.
 - Do not copy the prototype JavaScript state-management approach.
 - Recreate the relevant screen using reusable React components.
 - Preserve the approved labels, information hierarchy, workflow, spacing, and visual style.
-- The current React authentication and role-based routing remain the source of truth.
+- The current React authentication, canonical roles (`OFFICE_USER`, `SUPERVISOR`, and `ADMIN`), centralized permissions, and role-based routing remain the source of truth.
 - Screenshots under `screenshots/` are the visual source of truth when available.
 - The complete HTML prototype is the workflow and content reference when a screenshot is unavailable.
 - The prototype must be recreated in React and must never be embedded, imported, or loaded through an iframe.
@@ -46,7 +46,11 @@ The prototype is a visual and workflow reference only.
 
 - Correspondence is owned by offices.
 - Users perform actions on behalf of their assigned offices.
-- OFFICE_USER cannot access reports or administration.
-- OFFICE_SUPERVISOR can access reports for their own office only.
-- SYSTEM_ADMIN cannot access confidential office reports.
+- `OFFICE_USER` can access office correspondence functions but cannot access Office Reports or administration.
+- `SUPERVISOR` can access correspondence functions and confidential reports for their own assigned office only.
+- `ADMIN` can manage users, offices, roles, account status, password resets, and the System Audit Log.
+- `ADMIN` cannot access confidential Office Reports.
+- A supervisor must never be able to view reports belonging to another office.
+- Report office scope must come from the authenticated supervisor’s assigned office, not from a selectable office parameter.
 - Reports must never expose one office’s confidential information to another office.
+- Administrative access does not grant authority to perform correspondence workflow actions on behalf of an office.

@@ -1,3 +1,5 @@
+import { getOfficeById } from './offices.js'
+
 export const reportPeriodOptions = [
   'This Month',
   'Last Month',
@@ -18,8 +20,10 @@ export const reportDocumentTypeOptions = [
 export const reportPriorityOptions = ['All priorities', 'Normal', 'High', 'Urgent']
 
 const emptyOfficeReportData = {
-  officeId: '',
+  office: null,
+  officeId: null,
   officeName: '',
+  officeCode: null,
   periods: {},
   defaultPeriod: 'This Month',
   stageOptions: [],
@@ -28,8 +32,7 @@ const emptyOfficeReportData = {
 
 const officeReportData = {
   'office-legal': {
-    officeId: 'office-legal',
-    officeName: 'Legal Directorate',
+    office: getOfficeById('office-legal'),
     defaultPeriod: 'This Month',
     stageOptions: [
       'Initial Legal Review',
@@ -423,13 +426,31 @@ const officeReportData = {
 }
 
 export function getEmptyOfficeReportData(officeId = '', officeName = '') {
+  const office = getOfficeById(officeId) ?? null
+
   return {
     ...emptyOfficeReportData,
-    officeId,
-    officeName,
+    office,
+    officeId: office?.id ?? officeId ?? null,
+    officeName: office?.name ?? officeName ?? '',
+    officeCode: office?.code ?? null,
   }
 }
 
-export function getOfficeReportData(officeId) {
-  return officeReportData[officeId] ?? getEmptyOfficeReportData(officeId)
+export function getOfficeReportData(officeInput) {
+  const office = typeof officeInput === 'string' ? getOfficeById(officeInput) : officeInput ?? null
+  const officeId = office?.id ?? officeInput ?? null
+  const reportData = officeId ? officeReportData[officeId] : null
+
+  if (!reportData) {
+    return getEmptyOfficeReportData(officeId, office?.name ?? '')
+  }
+
+  return {
+    ...reportData,
+    office: reportData.office ?? office ?? null,
+    officeId: reportData.office?.id ?? reportData.officeId ?? officeId,
+    officeName: reportData.office?.name ?? reportData.officeName ?? office?.name ?? '',
+    officeCode: reportData.office?.code ?? reportData.officeCode ?? office?.code ?? null,
+  }
 }

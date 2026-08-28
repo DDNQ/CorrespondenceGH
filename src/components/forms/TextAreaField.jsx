@@ -7,6 +7,7 @@ function TextAreaField({
   required = false,
   placeholder,
   inputRef,
+  disabled = false,
   className = '',
 }) {
   return (
@@ -21,6 +22,7 @@ function TextAreaField({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        disabled={disabled}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : undefined}
       />

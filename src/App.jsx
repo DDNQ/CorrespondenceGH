@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/routing/ProtectedRoute'
 import RoleRoute from './components/routing/RoleRoute'
-import { ROLES } from './constants/roles'
+import { USER_ROLES } from './constants/roles'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import AuditLogPage from './pages/admin/AuditLogPage'
 import UsersOfficesPage from './pages/admin/UsersOfficesPage'
@@ -34,20 +34,29 @@ function App() {
           <Route
             element={
               <RoleRoute
-                allowedRoles={[ROLES.OFFICE_USER, ROLES.OFFICE_SUPERVISOR]}
+                allowedRoles={[USER_ROLES.OFFICE_USER, USER_ROLES.SUPERVISOR]}
               />
             }
           >
             <Route path="/correspondence/new" element={<RegisterCorrespondencePage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+          </Route>
+
+          <Route
+            element={
+              <RoleRoute
+                allowedRoles={[USER_ROLES.OFFICE_USER, USER_ROLES.SUPERVISOR, USER_ROLES.ADMIN]}
+              />
+            }
+          >
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
 
-          <Route element={<RoleRoute allowedRoles={[ROLES.OFFICE_SUPERVISOR]} />}>
+          <Route element={<RoleRoute allowedRoles={[USER_ROLES.SUPERVISOR]} />}>
             <Route path="/reports" element={<OfficeReportsPage />} />
           </Route>
 
-          <Route element={<RoleRoute allowedRoles={[ROLES.SYSTEM_ADMIN]} />}>
+          <Route element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]} />}>
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/admin/users-offices" element={<UsersOfficesPage />} />
             <Route path="/admin/audit-log" element={<AuditLogPage />} />

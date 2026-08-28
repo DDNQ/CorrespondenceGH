@@ -1,42 +1,37 @@
-import { ROLES } from '../constants/roles'
-import { getOfficeById, offices } from '../data/offices'
-
-function normalizeText(value) {
-  return String(value ?? '').trim().toLowerCase()
-}
-
-function getOfficeByName(officeName) {
-  const normalizedOfficeName = normalizeText(officeName)
-
-  return offices.find((office) => normalizeText(office.name) === normalizedOfficeName) ?? null
-}
+import { canPerformOfficeWorkflow, isAdmin } from '../constants/roles.js'
+import { getCorrespondenceDisplayReference, normalizeCorrespondence } from './correspondence.js'
+import { isSameOffice, normalizeOffice } from './offices.js'
 
 function normalizeForwardingEvent(event, index = 0) {
-  const fromOfficeName =
-    event.fromOfficeName ??
-    event.forwardedFromOfficeName ??
-    getOfficeById(event.fromOfficeId ?? event.forwardedFromOfficeId)?.name ??
-    ''
-  const toOfficeName =
-    event.toOfficeName ??
-    event.forwardedToOfficeName ??
-    getOfficeById(event.toOfficeId ?? event.forwardedToOfficeId)?.name ??
-    ''
+  const fromOffice = normalizeOffice(
+    event.fromOffice ??
+      event.from_office ??
+      event.fromOfficeId ??
+      event.forwardedFromOfficeId ??
+      event.fromOfficeCode ??
+      event.fromOfficeName ??
+      event.forwardedFromOfficeName ??
+      null,
+  )
+  const toOffice = normalizeOffice(
+    event.toOffice ??
+      event.to_office ??
+      event.toOfficeId ??
+      event.forwardedToOfficeId ??
+      event.toOfficeCode ??
+      event.toOfficeName ??
+      event.forwardedToOfficeName ??
+      null,
+  )
 
   return {
     id: event.id ?? `forward-${index + 1}`,
-    fromOfficeId:
-      event.fromOfficeId ??
-      event.forwardedFromOfficeId ??
-      getOfficeByName(fromOfficeName)?.id ??
-      '',
-    fromOfficeName,
-    toOfficeId:
-      event.toOfficeId ??
-      event.forwardedToOfficeId ??
-      getOfficeByName(toOfficeName)?.id ??
-      '',
-    toOfficeName,
+    fromOffice,
+    fromOfficeId: fromOffice?.id ?? null,
+    fromOfficeName: fromOffice?.name ?? '',
+    toOffice,
+    toOfficeId: toOffice?.id ?? null,
+    toOfficeName: toOffice?.name ?? '',
     forwardedByUserId: event.forwardedByUserId ?? event.userId ?? '',
     forwardedByUserName: event.forwardedByUserName ?? event.userName ?? '',
     forwardedAt: event.forwardedAt ?? event.timestamp ?? '',
@@ -63,7 +58,7 @@ function getForwardingHistory(record) {
     return [
       normalizeForwardingEvent(
         {
-          id: `${record.id ?? record.reference ?? 'record'}-forwarding-legacy`,
+          id: `${record.id ?? getCorrespondenceDisplayReference(record) ?? 'record'}-forwarding-legacy`,
           fromOfficeId: record.forwardedFromOfficeId ?? '',
           fromOfficeName: record.forwardedFromOfficeName ?? '',
           toOfficeId: record.forwardedToOfficeId ?? '',
@@ -87,37 +82,92 @@ export function normalizeCorrespondenceRecord(record) {
     return null
   }
 
-  const currentOfficeName =
-    record.currentOfficeName ??
-    record.currentOffice ??
-    record.destinationOffice ??
-    record.routeToOffice ??
-    getOfficeById(record.currentOfficeId)?.name ??
-    ''
-  const currentOfficeId =
-    record.currentOfficeId ??
-    getOfficeByName(currentOfficeName)?.id ??
-    ''
-  const registeringOfficeName =
-    record.registeringOfficeName ??
+  const canonicalRecord = normalizeCorrespondence(record)
+  const currentOffice = normalizeOffice(
+    canonicalRecord.currentOffice ??
+      record.currentOffice ??
+      record.current_office ??
+      record.office ??
+      record.currentOfficeId ??
+      record.current_office_id ??
+      record.officeId ??
+      record.office_id ??
+      record.currentOfficeCode ??
+      record.officeCode ??
+      record.office_code ??
+      record.currentOfficeName ??
+      record.current_office_name ??
+      record.officeName ??
+      record.office_name ??
+      record.destinationOffice ??
+      record.routeToOffice ??
+      null,
+  )
+  const registeringOffice = normalizeOffice(
     record.registeringOffice ??
-    getOfficeById(record.registeringOfficeId)?.name ??
-    ''
-  const registeringOfficeId =
-    record.registeringOfficeId ??
-    getOfficeByName(registeringOfficeName)?.id ??
-    ''
+      record.registering_office ??
+      record.registeringOfficeId ??
+      record.registering_office_id ??
+      record.registeringOfficeCode ??
+      record.registeringOfficeName ??
+      record.registering_office_name ??
+      record.originatingOffice ??
+      null,
+  )
+  const forwardedFromOffice = normalizeOffice(
+    record.forwardedFromOffice ??
+      record.forwarded_from_office ??
+      record.forwardedFromOfficeId ??
+      record.forwarded_from_office_id ??
+      record.forwardedFromOfficeName ??
+      record.forwarded_from_office_name ??
+      null,
+  )
+  const forwardedToOffice = normalizeOffice(
+    record.forwardedToOffice ??
+      record.forwarded_to_office ??
+      record.forwardedToOfficeId ??
+      record.forwarded_to_office_id ??
+      record.forwardedToOfficeName ??
+      record.forwarded_to_office_name ??
+      record.destinationOffice ??
+      record.routeToOffice ??
+      null,
+  )
+  const receivedByOffice = normalizeOffice(
+    record.receivedByOffice ??
+      record.received_by_office ??
+      record.receivedByOfficeId ??
+      record.received_by_office_id ??
+      record.receivedByOfficeName ??
+      record.received_by_office_name ??
+      null,
+  )
 
   return {
     ...record,
-    currentOfficeId,
-    currentOfficeName,
-    currentOffice: currentOfficeName,
-    registeringOfficeId,
-    registeringOfficeName,
-    registeringOffice: registeringOfficeName,
+    ...canonicalRecord,
+    currentOffice,
+    currentOfficeId: currentOffice?.id ?? null,
+    currentOfficeName: currentOffice?.name ?? '',
+    currentOfficeCode: currentOffice?.code ?? null,
+    registeringOffice,
+    registeringOfficeId: registeringOffice?.id ?? null,
+    registeringOfficeName: registeringOffice?.name ?? '',
+    registeringOfficeCode: registeringOffice?.code ?? null,
+    destinationOffice: forwardedToOffice ?? currentOffice,
+    forwardedFromOffice,
+    forwardedFromOfficeId: forwardedFromOffice?.id ?? null,
+    forwardedFromOfficeName: forwardedFromOffice?.name ?? '',
+    forwardedToOffice,
+    forwardedToOfficeId: forwardedToOffice?.id ?? null,
+    forwardedToOfficeName: forwardedToOffice?.name ?? '',
+    receivedByOffice,
+    receivedByOfficeId: receivedByOffice?.id ?? null,
+    receivedByOfficeName: receivedByOffice?.name ?? '',
     forwardingHistory: getForwardingHistory(record),
     receiptStatus:
+      canonicalRecord.receiptStatus ??
       record.receiptStatus ??
       (record.status === 'Received' ? 'Pending' : null),
     isFiled: record.isFiled ?? record.status === 'Filed',
@@ -131,16 +181,7 @@ export function isRecordAtUserOffice(record, user) {
   }
 
   const normalizedRecord = normalizeCorrespondenceRecord(record)
-
-  if (
-    normalizedRecord.currentOfficeId &&
-    user.officeId &&
-    normalizedRecord.currentOfficeId === user.officeId
-  ) {
-    return true
-  }
-
-  return normalizeText(normalizedRecord.currentOfficeName) === normalizeText(user.officeName)
+  return isSameOffice(normalizedRecord.currentOffice, user.office)
 }
 
 export function getCorrespondenceActionPermissions({
@@ -149,9 +190,8 @@ export function getCorrespondenceActionPermissions({
   isGuidedReview = false,
 }) {
   const normalizedRecord = normalizeCorrespondenceRecord(record)
-  const isOfficeActor =
-    user?.role === ROLES.OFFICE_USER || user?.role === ROLES.OFFICE_SUPERVISOR
-  const isSystemAdmin = user?.role === ROLES.SYSTEM_ADMIN
+  const isOfficeActor = canPerformOfficeWorkflow(user)
+  const isSystemAdmin = isAdmin(user)
   const isAtUserOffice = isRecordAtUserOffice(normalizedRecord, user)
   const isPendingReceipt =
     normalizedRecord?.status === 'Received' &&
@@ -181,10 +221,11 @@ export function getCorrespondenceActionPermissions({
   const canUpdateStage = canUseNormalWorkflowActions
   const canForward = canUseNormalWorkflowActions
   const canMarkCompleted = canUseNormalWorkflowActions
+  const canFile = canUseNormalWorkflowActions
   const canEditRecord = false
   const canAddNote = canUseNormalWorkflowActions
   const canAddAttachment = canUseNormalWorkflowActions
-  const showActionsMenu = [canUpdateStage, canForward, canMarkCompleted, canEditRecord]
+  const showActionsMenu = [canUpdateStage, canForward, canMarkCompleted, canFile, canEditRecord]
     .filter(Boolean)
     .length > 0
 
@@ -221,6 +262,7 @@ export function getCorrespondenceActionPermissions({
     canUpdateStage,
     canForward,
     canMarkCompleted,
+    canFile,
     canEditRecord,
     canAddNote,
     canAddAttachment,
@@ -235,29 +277,14 @@ export function wasForwardedByOffice(record, user) {
 
   const normalizedRecord = normalizeCorrespondenceRecord(record)
   const matchesHistory = normalizedRecord.forwardingHistory.some((event) => {
-    if (event.fromOfficeId && user.officeId && event.fromOfficeId === user.officeId) {
-      return true
-    }
-
-    return normalizeText(event.fromOfficeName) === normalizeText(user.officeName)
+    return isSameOffice(event.fromOffice, user.office)
   })
 
   if (matchesHistory) {
     return true
   }
 
-  if (
-    normalizedRecord.forwardedFromOfficeId &&
-    user.officeId &&
-    normalizedRecord.forwardedFromOfficeId === user.officeId
-  ) {
-    return true
-  }
-
-  return (
-    normalizeText(normalizedRecord.forwardedFromOfficeName) ===
-    normalizeText(user.officeName)
-  )
+  return isSameOffice(normalizedRecord.forwardedFromOffice, user.office)
 }
 
 export function getLatestForwardingEventForOffice(record, user) {
@@ -267,11 +294,7 @@ export function getLatestForwardingEventForOffice(record, user) {
 
   const normalizedRecord = normalizeCorrespondenceRecord(record)
   const matchingEvents = normalizedRecord.forwardingHistory.filter((event) => {
-    if (event.fromOfficeId && user.officeId && event.fromOfficeId === user.officeId) {
-      return true
-    }
-
-    return normalizeText(event.fromOfficeName) === normalizeText(user.officeName)
+    return isSameOffice(event.fromOffice, user.office)
   })
 
   return matchingEvents.at(-1) ?? null

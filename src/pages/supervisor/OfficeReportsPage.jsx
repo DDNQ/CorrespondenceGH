@@ -1,26 +1,32 @@
-import { FileSpreadsheet, FileText, Info } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import EmptyState from '../../components/common/EmptyState'
 import PageHeader from '../../components/common/PageHeader'
 import SectionCard from '../../components/common/SectionCard'
-import ReportFilters from '../../components/reports/ReportFilters'
-import ReportMetricCard from '../../components/reports/ReportMetricCard'
+import ApiAnalyticsWorkspace from '../../components/reports/ApiAnalyticsWorkspace'
+import FormalReportHistoryWorkspace from '../../components/reports/formal/FormalReportHistoryWorkspace'
+import FormalReportsWorkspace from '../../components/reports/formal/FormalReportsWorkspace'
 import { useAuth } from '../../context/useAuth'
 import { useToast } from '../../context/useToast'
-import { getOfficeReportData } from '../../data/reports'
+import { getServiceBundle } from '../../services/serviceProvider.js'
+import { getOfficeDisplayName } from '../../utils/offices.js'
 import {
-  calculateAcknowledgementRate,
-  calculateAverageAcknowledgementTime,
-} from '../../utils/reportCalculations'
+  resolveAnalyticsOfficeContext,
+  resolveAnalyticsSummaryDateRange,
+} from '../../utils/analyticsReports.js'
+
+const REPORT_SECTIONS = [
+  { id: 'analytics', label: 'Analytics' },
+  { id: 'formal', label: 'Formal Reports' },
+  { id: 'history', label: 'Report History' },
+]
 
 const REPORT_TABS = [
   { id: 'office-summary', label: 'Office Summary' },
   { id: 'pending-ageing', label: 'Pending & Ageing' },
   { id: 'staff-contribution', label: 'Staff Contribution' },
 ]
-const VALID_REPORT_TAB_IDS = REPORT_TABS.map((tab) => tab.id)
 
 const INITIAL_FILTERS = {
   period: 'This Month',
@@ -32,192 +38,297 @@ const INITIAL_FILTERS = {
   contributor: 'All staff contributors',
 }
 
-function formatPercent(value) {
-  return `${value.toFixed(1)}%`
+const INITIAL_ANALYTICS_STATE = Object.freeze({
+  summary: { status: 'idle', data: null, error: '' },
+  backlog: { status: 'idle', data: null, error: '' },
+  staffContribution: { status: 'idle', data: null, error: '' },
+  trends: { status: 'idle', data: null, error: '' },
+})
+
+function createAnalyticsSectionState(status = 'idle', data = null, error = '') {
+  return { status, data, error }
 }
 
-function formatDays(value) {
-  return `${value.toFixed(1)} days`
-}
+function normalizeAnalyticsErrorMessage(error, fallbackMessage) {
+  const status = Number(error?.status)
 
-function formatMinutes(value) {
-  if (!value) {
-    return '0 minutes'
+  if (status === 400) {
+    return 'The selected date range could not be processed. Check the dates and try again.'
   }
 
-  if (value >= 60) {
-    const hours = Math.floor(value / 60)
-    const minutes = Math.round(value % 60)
-    return `${hours} hour${hours === 1 ? '' : 's'}${minutes ? ` ${minutes} minute${minutes === 1 ? '' : 's'}` : ''}`
+  if (status === 403) {
+    return 'Office analytics are not available for the authenticated office.'
   }
 
-  const rounded = Math.round(value)
-  return `${rounded} minute${rounded === 1 ? '' : 's'}`
-}
-
-function sortStaffContribution(items) {
-  // Staff contribution reflects office activity and must not be presented as a performance leaderboard.
-  return [...items].sort((left, right) => left.name.localeCompare(right.name))
-}
-
-function getLongestAcknowledgementDelay(records) {
-  const durations = records
-    .map((record) => {
-      if (!record.arrivedAtCurrentOffice || !record.receivedAt) {
-        return 0
-      }
-
-      const arrivedAt = new Date(String(record.arrivedAtCurrentOffice).replace(',', ''))
-      const receivedAt = new Date(String(record.receivedAt).replace(',', ''))
-
-      if (Number.isNaN(arrivedAt.getTime()) || Number.isNaN(receivedAt.getTime())) {
-        return 0
-      }
-
-      return Math.max(0, Math.round((receivedAt.getTime() - arrivedAt.getTime()) / 60000))
-    })
-
-  return durations.length ? Math.max(...durations) : 0
-}
-
-function resolveSnapshot(reportData, filters) {
-  if (filters.period !== 'Custom Range') {
-    return reportData.periods[filters.period] ?? null
+  if (status === 404) {
+    return 'The requested analytics resource is currently unavailable.'
   }
 
-  if (!filters.startDate || !filters.endDate) {
-    return null
+  if (status >= 500) {
+    return 'The reports service is temporarily unavailable. Try again.'
   }
 
-  const start = new Date(`${filters.startDate}T00:00:00`)
-  const end = new Date(`${filters.endDate}T23:59:59`)
-
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
-    return null
-  }
-
-  if (start <= new Date('2026-07-31T23:59:59') && end >= new Date('2026-07-01T00:00:00')) {
-    return reportData.periods['This Month'] ?? null
-  }
-
-  if (start <= new Date('2026-06-30T23:59:59') && end >= new Date('2026-06-01T00:00:00')) {
-    return reportData.periods['Last Month'] ?? null
-  }
-
-  if (start <= new Date('2026-06-30T23:59:59') && end >= new Date('2026-04-01T00:00:00')) {
-    return reportData.periods['Last 3 Months'] ?? null
-  }
-
-  if (start <= new Date('2026-06-30T23:59:59') && end >= new Date('2026-01-01T00:00:00')) {
-    return reportData.periods['This Year'] ?? null
-  }
-
-  return null
+  return error?.message ?? fallbackMessage
 }
 
 function OfficeReportsPage() {
   const { currentUser } = useAuth()
   const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
-  const reportData = getOfficeReportData(currentUser?.officeId)
-  const [draftFilters, setDraftFilters] = useState(() => ({
-    ...INITIAL_FILTERS,
-    period: reportData.defaultPeriod || INITIAL_FILTERS.period,
-  }))
-  const [appliedFilters, setAppliedFilters] = useState(() => ({
-    ...INITIAL_FILTERS,
-    period: reportData.defaultPeriod || INITIAL_FILTERS.period,
-  }))
-  const requestedTab = searchParams.get('tab') ?? 'office-summary'
+  const reportsService = useMemo(() => getServiceBundle().reports, [])
+  const officeService = useMemo(() => getServiceBundle().offices, [])
+  const [workspace, setWorkspace] = useState(null)
+  const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true)
+  const [workspaceError, setWorkspaceError] = useState('')
+  const [draftFilters, setDraftFilters] = useState(INITIAL_FILTERS)
+  const [appliedFilters, setAppliedFilters] = useState(INITIAL_FILTERS)
+  const [analyticsFilterError, setAnalyticsFilterError] = useState('')
+  const [apiAnalyticsState, setApiAnalyticsState] = useState(INITIAL_ANALYTICS_STATE)
+  const [analyticsRetryToken, setAnalyticsRetryToken] = useState(0)
+
+  const requestedSection = searchParams.get('section') ?? REPORT_SECTIONS[0].id
+  const requestedTab = searchParams.get('tab') ?? REPORT_TABS[0].id
+  const activeSection =
+    REPORT_SECTIONS.find((section) => section.id === requestedSection)?.id ??
+    REPORT_SECTIONS[0].id
   const activeTab =
     REPORT_TABS.find((tab) => tab.id === requestedTab)?.id ?? REPORT_TABS[0].id
 
-  // TODO: Backend API must independently enforce office report scope using the authenticated supervisor office on every report query.
-
-  const snapshot = useMemo(
-    () => resolveSnapshot(reportData, appliedFilters),
-    [appliedFilters, reportData],
+  const analyticsOfficeContext = useMemo(
+    () => resolveAnalyticsOfficeContext(currentUser, workspace),
+    [currentUser, workspace],
   )
 
-  const filteredPendingItems = useMemo(() => {
-    const items = snapshot?.pendingAgeing?.items ?? []
-
-    return items.filter((item) => {
-      const matchesDocumentType =
-        appliedFilters.documentType === 'All document types' ||
-        item.documentType === appliedFilters.documentType
-      const matchesPriority =
-        appliedFilters.priority === 'All priorities' ||
-        item.priority === appliedFilters.priority
-      const matchesStage =
-        appliedFilters.stage === 'All stages' ||
-        item.currentStage === appliedFilters.stage
-      const matchesContributor =
-        appliedFilters.contributor === 'All staff contributors' ||
-        item.lastActor === appliedFilters.contributor
-
-      return (
-        matchesDocumentType &&
-        matchesPriority &&
-        matchesStage &&
-        matchesContributor
-      )
-    })
-  }, [appliedFilters, snapshot])
-
-  const filteredStaffContribution = useMemo(() => {
-    const items = snapshot?.staffContribution ?? []
-
-    if (appliedFilters.contributor === 'All staff contributors') {
-      return sortStaffContribution(items)
+  const apiAnalyticsWorkspaceState = useMemo(() => {
+    if (analyticsOfficeContext.officeId) {
+      return apiAnalyticsState
     }
 
-    return sortStaffContribution(
-      items.filter((item) => item.name === appliedFilters.contributor),
-    )
-  }, [appliedFilters.contributor, snapshot])
-
-  const acknowledgementSummary = useMemo(() => {
-    if (!snapshot) {
-      return null
-    }
-
-    const acknowledgementRecords = snapshot.receiptAcknowledgements ?? []
-    const acknowledged = acknowledgementRecords.filter(
-      (item) => item.receiptStatus === 'Acknowledged',
-    ).length
-    const pending = acknowledgementRecords.filter(
-      (item) => item.receiptStatus === 'Pending',
-    ).length
-    const acknowledgementRate = calculateAcknowledgementRate(
-      acknowledged,
-      acknowledgementRecords.length,
-    )
-    const averageAcknowledgementMinutes =
-      calculateAverageAcknowledgementTime(acknowledgementRecords)
-    const longestAcknowledgementMinutes =
-      getLongestAcknowledgementDelay(acknowledgementRecords)
+    const unavailableMessage =
+      'The authenticated office is unavailable for analytics requests.'
 
     return {
-      acknowledgementRate,
-      averageAcknowledgementMinutes,
-      longestAcknowledgementMinutes,
-      acknowledged,
-      pending,
+      summary: createAnalyticsSectionState('error', null, unavailableMessage),
+      backlog: createAnalyticsSectionState('error', null, unavailableMessage),
+      staffContribution: createAnalyticsSectionState('error', null, unavailableMessage),
+      trends: createAnalyticsSectionState('error', null, unavailableMessage),
     }
-  }, [snapshot])
+  }, [analyticsOfficeContext.officeId, apiAnalyticsState])
 
   useEffect(() => {
-    const requestedTab = searchParams.get('tab')
+    let isActive = true
 
-    if (!requestedTab || VALID_REPORT_TAB_IDS.includes(requestedTab)) {
+    async function loadWorkspace() {
+      setIsLoadingWorkspace(true)
+      setWorkspaceError('')
+
+      try {
+        const [workspaceResult, officeResult] = await Promise.allSettled([
+          reportsService.getOfficeReportWorkspace(currentUser),
+          officeService.resolveOfficeFromDirectory(currentUser?.office),
+        ])
+
+        if (workspaceResult.status !== 'fulfilled') {
+          throw workspaceResult.reason
+        }
+
+        if (!isActive) {
+          return
+        }
+
+        const nextWorkspace = workspaceResult.value
+        const effectiveOffice =
+          (officeResult.status === 'fulfilled' ? officeResult.value : null) ??
+          nextWorkspace.office ??
+          currentUser?.office ??
+          null
+        const normalizedWorkspace = {
+          ...nextWorkspace,
+          office: effectiveOffice,
+          officeName: getOfficeDisplayName(effectiveOffice),
+          officeCode: effectiveOffice?.code ?? '',
+          configuration: {
+            ...nextWorkspace.configuration,
+            officeName: getOfficeDisplayName(effectiveOffice),
+            officeCode: effectiveOffice?.code ?? '',
+          },
+        }
+
+        setWorkspace(normalizedWorkspace)
+        const nextPeriod = normalizedWorkspace.defaultPeriod || INITIAL_FILTERS.period
+        setDraftFilters((current) => ({ ...current, period: nextPeriod }))
+        setAppliedFilters((current) => ({ ...current, period: nextPeriod }))
+      } catch (error) {
+        if (!isActive) {
+          return
+        }
+
+        setWorkspace(null)
+        setWorkspaceError(error?.message ?? 'Unable to load the office reports workspace.')
+      } finally {
+        if (isActive) {
+          setIsLoadingWorkspace(false)
+        }
+      }
+    }
+
+    void loadWorkspace()
+
+    return () => {
+      isActive = false
+    }
+  }, [currentUser, officeService, reportsService])
+
+  useEffect(() => {
+    const nextSearchParams = new URLSearchParams(searchParams)
+    let changed = false
+
+    if (!REPORT_SECTIONS.some((section) => section.id === requestedSection)) {
+      nextSearchParams.set('section', REPORT_SECTIONS[0].id)
+      changed = true
+    }
+
+    if (!REPORT_TABS.some((tab) => tab.id === requestedTab)) {
+      nextSearchParams.set('tab', REPORT_TABS[0].id)
+      changed = true
+    }
+
+    if (changed) {
+      setSearchParams(nextSearchParams, { replace: true })
+    }
+  }, [requestedSection, requestedTab, searchParams, setSearchParams])
+
+  useEffect(() => {
+    if (activeSection !== 'analytics' || !workspace || !analyticsOfficeContext.officeId) {
       return
     }
 
+    const summaryRange = resolveAnalyticsSummaryDateRange(appliedFilters)
+
+    if (!summaryRange.valid) {
+      return
+    }
+
+    let isActive = true
+
+    async function loadApiAnalytics() {
+      if (!isActive) {
+        return
+      }
+
+      setApiAnalyticsState({
+        summary: createAnalyticsSectionState('loading'),
+        backlog: createAnalyticsSectionState('loading'),
+        staffContribution: createAnalyticsSectionState('loading'),
+        trends: createAnalyticsSectionState('loading'),
+      })
+
+      const [summaryResult, backlogResult, staffContributionResult, trendsResult] =
+        await Promise.allSettled([
+          reportsService.getOfficeSummaryReport(
+            analyticsOfficeContext.officeId,
+            summaryRange.usesCustomRange
+              ? { start: summaryRange.start, end: summaryRange.end }
+              : {},
+          ),
+          reportsService.getOfficeBacklogReport(analyticsOfficeContext.officeId),
+          reportsService.getOfficeStaffContributionReport(analyticsOfficeContext.officeId),
+          reportsService.getOfficeTrendsReport(analyticsOfficeContext.officeId),
+        ])
+
+      if (!isActive) {
+        return
+      }
+
+      setApiAnalyticsState({
+        summary:
+          summaryResult.status === 'fulfilled'
+            ? createAnalyticsSectionState('success', summaryResult.value)
+            : createAnalyticsSectionState(
+                'error',
+                null,
+                normalizeAnalyticsErrorMessage(
+                  summaryResult.reason,
+                  'The office summary could not be loaded.',
+                ),
+              ),
+        backlog:
+          backlogResult.status === 'fulfilled'
+            ? createAnalyticsSectionState('success', backlogResult.value)
+            : createAnalyticsSectionState(
+                'error',
+                null,
+                normalizeAnalyticsErrorMessage(
+                  backlogResult.reason,
+                  'The office backlog could not be loaded.',
+                ),
+              ),
+        staffContribution:
+          staffContributionResult.status === 'fulfilled'
+            ? createAnalyticsSectionState('success', staffContributionResult.value)
+            : createAnalyticsSectionState(
+                'error',
+                null,
+                normalizeAnalyticsErrorMessage(
+                  staffContributionResult.reason,
+                  'Staff contribution activity could not be loaded.',
+                ),
+              ),
+        trends:
+          trendsResult.status === 'fulfilled'
+            ? createAnalyticsSectionState('success', trendsResult.value)
+            : createAnalyticsSectionState(
+                'error',
+                null,
+                normalizeAnalyticsErrorMessage(
+                  trendsResult.reason,
+                  'Monthly correspondence trends could not be loaded.',
+                ),
+              ),
+      })
+    }
+
+    void loadApiAnalytics()
+
+    return () => {
+      isActive = false
+    }
+  }, [
+    activeSection,
+    analyticsOfficeContext.officeId,
+    analyticsRetryToken,
+    appliedFilters,
+    reportsService,
+    workspace,
+  ])
+
+  const handleDraftFilterChange = (field, value) => {
+    setAnalyticsFilterError('')
+    setDraftFilters((current) => ({ ...current, [field]: value }))
+  }
+
+  const handleApplyFilters = () => {
+    const range = resolveAnalyticsSummaryDateRange(draftFilters)
+
+    if (!range.valid) {
+      setAnalyticsFilterError(range.error)
+      return
+    }
+
+    setAnalyticsFilterError('')
+    setAppliedFilters(draftFilters)
+  }
+
+  const handleAnalyticsRetry = () => {
+    setAnalyticsRetryToken((current) => current + 1)
+  }
+
+  const handleSectionChange = (sectionId) => {
     const nextSearchParams = new URLSearchParams(searchParams)
-    nextSearchParams.set('tab', REPORT_TABS[0].id)
+    nextSearchParams.set('section', sectionId)
+    nextSearchParams.set('tab', activeTab)
     setSearchParams(nextSearchParams, { replace: true })
-  }, [searchParams, setSearchParams])
+  }
 
   const handleTabChange = (tabId) => {
     const nextSearchParams = new URLSearchParams(searchParams)
@@ -225,392 +336,143 @@ function OfficeReportsPage() {
     setSearchParams(nextSearchParams, { replace: true })
   }
 
-  const handleExport = (format) => {
-    showToast({
-      title:
-        format === 'pdf'
-          ? 'PDF report export prepared.'
-          : 'Excel report export prepared.',
-      message: 'Includes Office Summary, Pending & Ageing, and Staff Contribution.',
-    })
+  const reportsCurrentUser = useMemo(() => {
+    if (!currentUser) {
+      return currentUser
+    }
+
+    return {
+      ...currentUser,
+      office: workspace?.office ?? currentUser.office ?? null,
+    }
+  }, [currentUser, workspace?.office])
+
+  if (isLoadingWorkspace) {
+    return (
+      <section className="reports-page">
+        <div className="report-page-content">
+          <PageHeader title="Office Reports" />
+          <SectionCard
+            title="Reports"
+            className="report-section-card"
+          >
+            <EmptyState
+              title="Loading reports"
+              description="Please wait."
+            />
+          </SectionCard>
+        </div>
+      </section>
+    )
   }
 
-  const baseOfficeName = currentUser?.officeName ?? reportData.officeName
+  if (workspaceError || !workspace) {
+    return (
+      <section className="reports-page">
+        <div className="report-page-content">
+          <PageHeader title="Office Reports" />
+          <SectionCard
+            title="Reports unavailable"
+            className="report-section-card"
+          >
+            <EmptyState
+              title="Reports unavailable"
+              description={
+                workspaceError ||
+                'Reports are not currently available.'
+              }
+            />
+          </SectionCard>
+        </div>
+      </section>
+    )
+  }
+
+  const baseOfficeName = getOfficeDisplayName(
+    currentUser?.office ?? workspace?.office ?? workspace?.analyticsData?.office,
+  )
 
   return (
     <section className="reports-page">
       <div className="report-page-content">
-        <PageHeader
-          title={`${baseOfficeName} Reports`}
-          description="Review correspondence activity for your office."
-          actions={
-            <div className="split-actions reports-page__actions">
-              <button
-                type="button"
-                className="button button--secondary"
-                onClick={() => handleExport('pdf')}
-              >
-                <FileText size={16} aria-hidden="true" />
-                <span>Export PDF</span>
-              </button>
-              <button
-                type="button"
-                className="button button--secondary"
-                onClick={() => handleExport('excel')}
-              >
-                <FileSpreadsheet size={16} aria-hidden="true" />
-                <span>Export Excel</span>
-              </button>
-            </div>
-          }
-        />
+        <div className="reports-page-header formal-report-no-print">
+          <h1>{`${baseOfficeName} Reports`}</h1>
 
-        <div className="reports-confidentiality-notice" role="note">
-          <Info size={16} aria-hidden="true" />
-          <p>
-            This report contains confidential performance information for {baseOfficeName} and is available only to authorised office supervisors.
-          </p>
-        </div>
-
-        <ReportFilters
-          officeName={baseOfficeName}
-          filters={draftFilters}
-          stageOptions={reportData.stageOptions}
-          contributorOptions={reportData.contributorOptions}
-          onChange={(field, value) =>
-            setDraftFilters((current) => ({ ...current, [field]: value }))
-          }
-          onSubmit={() => setAppliedFilters(draftFilters)}
-        />
-
-        <section className="reports-tabs-shell">
           <div
-            className="reports-tabs"
+            className="reports-primary-tabs"
             role="tablist"
-            aria-label="Office report sections"
+            aria-label="Reports sections"
           >
-            {REPORT_TABS.map((tab) => (
+            {REPORT_SECTIONS.map((section) => (
               <button
-                key={tab.id}
+                key={section.id}
                 type="button"
                 role="tab"
-                aria-selected={activeTab === tab.id}
-                aria-controls={`report-panel-${tab.id}`}
-                id={`report-tab-${tab.id}`}
-                className={activeTab === tab.id ? 'tab-button tab-button--active report-tab' : 'tab-button report-tab'}
-                onClick={() => handleTabChange(tab.id)}
+                aria-selected={activeSection === section.id}
+                aria-controls={`reports-section-${section.id}`}
+                id={`reports-section-tab-${section.id}`}
+                className={
+                  activeSection === section.id
+                    ? 'tab-button tab-button--active reports-primary-tab'
+                    : 'tab-button reports-primary-tab'
+                }
+                onClick={() => handleSectionChange(section.id)}
               >
-                {tab.label}
+                {section.label}
               </button>
             ))}
           </div>
-        </section>
+        </div>
 
-        {!snapshot ? (
-          <SectionCard title="Office Reports" description="Selected reporting view." className="report-section-card">
-            <EmptyState
-              title="No report data available"
-              description="No correspondence activity was recorded for the selected reporting period."
-            />
-          </SectionCard>
+        {activeSection === 'analytics' ? (
+          <ApiAnalyticsWorkspace
+            officeName={baseOfficeName}
+            filters={draftFilters}
+            filterError={analyticsFilterError}
+            onFilterChange={handleDraftFilterChange}
+            onFilterSubmit={handleApplyFilters}
+            activeTab={activeTab}
+            tabs={REPORT_TABS}
+            onTabChange={handleTabChange}
+            summaryState={apiAnalyticsWorkspaceState.summary}
+            backlogState={apiAnalyticsWorkspaceState.backlog}
+            staffContributionState={apiAnalyticsWorkspaceState.staffContribution}
+            trendsState={apiAnalyticsWorkspaceState.trends}
+            onRetry={handleAnalyticsRetry}
+          />
         ) : null}
 
-        {snapshot && activeTab === 'office-summary' ? (
+        {activeSection === 'formal' ? (
           <div
-            id="report-panel-office-summary"
+            id="reports-section-formal"
             role="tabpanel"
-            aria-labelledby="report-tab-office-summary"
+            aria-labelledby="reports-section-tab-formal"
             className="report-tab-panel"
           >
-          <section className="report-kpi-grid report-kpi-grid--office-summary">
-            <ReportMetricCard
-              label="Correspondence Received"
-              value={snapshot.summary.received}
-              description="Distinct records entering the office"
+            <FormalReportsWorkspace
+              currentUser={reportsCurrentUser}
+              workspace={workspace}
+              reportsService={reportsService}
+              showToast={showToast}
             />
-            <ReportMetricCard
-              label="Correspondence Worked On"
-              value={snapshot.summary.workedOn}
-              description="At least one meaningful office action"
-            />
-            <ReportMetricCard
-              label="Completed by Office"
-              value={snapshot.summary.completed}
-              description="Office stages completed"
-            />
-            <ReportMetricCard
-              label="Pending"
-              value={snapshot.summary.pending}
-              description="Still requiring office action"
-            />
-            <ReportMetricCard
-              label="Due Soon"
-              value={snapshot.summary.dueSoon}
-              description="Approaching office deadline"
-              tone="amber"
-            />
-            <ReportMetricCard
-              label="Overdue"
-              value={snapshot.summary.overdue}
-              description="Past office deadline"
-              tone="red"
-            />
-            <ReportMetricCard
-              label="Average Turnaround Time"
-              value={formatDays(snapshot.summary.averageTurnaroundDays)}
-              description="Average time to complete office work"
-            />
-          </section>
-
-          <div className="report-summary-grid">
-            <SectionCard title="Receipt Acknowledgement" description="Receipt performance for correspondence entering the office from other offices." className="report-section-card">
-              <div className="reports-kpi-grid receipt-metric-grid">
-                <div className="metric-card">
-                  <p className="data-label">Received from Other Offices</p>
-                  <h3>{snapshot.receiptAcknowledgements.length}</h3>
-                </div>
-                <div className="metric-card">
-                  <p className="data-label">Acknowledged</p>
-                  <h3>{acknowledgementSummary.acknowledged}</h3>
-                </div>
-                <div className="metric-card">
-                  <p className="data-label">Awaiting Acknowledgement</p>
-                  <h3>{acknowledgementSummary.pending}</h3>
-                </div>
-                <div className="metric-card">
-                  <p className="data-label">Acknowledgement Rate</p>
-                  <h3>{formatPercent(acknowledgementSummary.acknowledgementRate)}</h3>
-                </div>
-                <div className="metric-card">
-                  <p className="data-label">Average Acknowledgement Time</p>
-                  <h3>{formatMinutes(acknowledgementSummary.averageAcknowledgementMinutes)}</h3>
-                </div>
-                <div className="metric-card">
-                  <p className="data-label">Longest Acknowledgement Delay</p>
-                  <h3>{formatMinutes(acknowledgementSummary.longestAcknowledgementMinutes)}</h3>
-                </div>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Status Breakdown" description="Visible status labels remain available as text." className="report-section-card">
-              <div className="summary-breakdown">
-                {snapshot.statusBreakdown.map((item) => (
-                  <div key={item.label} className="progress-row">
-                    <div className="progress-row__meta">
-                      <span>{item.label}</span>
-                      <span>{item.value}</span>
-                    </div>
-                    <div className="progress-row__track">
-                      <div
-                        className="progress-row__value"
-                        style={{ width: `${Math.min(100, (item.value / snapshot.summary.received) * 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
           </div>
+        ) : null}
 
-          <div className="report-summary-grid">
-            <SectionCard title="Document Type Breakdown" description="Count and percentage by document type." className="report-section-card">
-              <div className="summary-breakdown">
-                {snapshot.documentTypeBreakdown.map((item) => (
-                  <div key={item.label} className="progress-row">
-                    <div className="progress-row__meta">
-                      <span>{item.label}</span>
-                      <span>
-                        {item.count} / {item.percentage}%
-                      </span>
-                    </div>
-                    <div className="progress-row__track">
-                      <div
-                        className="progress-row__value"
-                        style={{ width: `${item.percentage}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Monthly Correspondence Activity" description="Received, worked on, and completed by month." className="report-section-card">
-              <div className="report-legend" aria-hidden="true">
-                <span><i className="report-legend__swatch report-legend__swatch--blue"></i>Received</span>
-                <span><i className="report-legend__swatch report-legend__swatch--slate"></i>Worked On</span>
-                <span><i className="report-legend__swatch report-legend__swatch--green"></i>Completed</span>
-              </div>
-              <div className="mini-chart" aria-label="Monthly correspondence activity chart">
-                {snapshot.monthlyActivity.map((item) => (
-                  <div key={item.month} className="mini-chart__bar-group">
-                    <div className="mini-chart__bars">
-                      <div className="mini-chart__bar mini-chart__bar--primary" style={{ height: `${item.received}px` }}></div>
-                      <div className="mini-chart__bar mini-chart__bar--secondary" style={{ height: `${item.workedOn}px` }}></div>
-                      <div className="mini-chart__bar mini-chart__bar--success" style={{ height: `${item.completed}px` }}></div>
-                    </div>
-                    <span>{item.month}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="tabs-note">
-                {snapshot.monthlyActivity
-                  .map(
-                    (item) =>
-                      `${item.month}: received ${item.received}, worked on ${item.workedOn}, completed ${item.completed}`,
-                  )
-                  .join('. ')}
-              </p>
-            </SectionCard>
-          </div>
-        </div>
-      ) : null}
-
-      {snapshot && activeTab === 'pending-ageing' ? (
-        <div
-          id="report-panel-pending-ageing"
-          role="tabpanel"
-          aria-labelledby="report-tab-pending-ageing"
-          className="report-tab-panel"
-        >
-          <SectionCard title="Ageing Summary" description="Pending records grouped by time spent in office." className="report-section-card">
-            <div className="reports-ageing-grid ageing-summary-grid">
-              {snapshot.pendingAgeing.bands.map((band) => (
-                <div key={band.label} className="metric-card">
-                  <p className="data-label">{band.label}</p>
-                  <h3>{band.count}</h3>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard title="Pending Detail" description="Pending correspondence and current ageing position." className="report-section-card">
-            {filteredPendingItems.length ? (
-              <div className="table-card">
-                <table className="report-table report-table--pending">
-                  <colgroup>
-                    <col className="report-col--reference" />
-                    <col className="report-col--subject" />
-                    <col className="report-col--stage" />
-                    <col className="report-col--date-received" />
-                    <col className="report-col--days" />
-                    <col className="report-col--deadline" />
-                    <col className="report-col--time" />
-                    <col className="report-col--person" />
-                    <col className="report-col--last-activity" />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th>Reference</th>
-                      <th>Subject</th>
-                      <th>Current Stage</th>
-                      <th>Date Received by Office</th>
-                      <th>Days in Office</th>
-                      <th>Deadline</th>
-                      <th>Time Remaining</th>
-                      <th>Last Person Who Acted</th>
-                      <th>Last Action Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPendingItems.map((item) => (
-                      <tr key={item.reference}>
-                        <td>{item.reference}</td>
-                        <td>{item.subject}</td>
-                        <td>{item.currentStage}</td>
-                        <td>{item.receivedAtOffice}</td>
-                        <td>{item.daysInOffice}</td>
-                        <td>{item.deadline}</td>
-                        <td className={`report-time-cell report-time-cell--${item.timeRemainingState}`}>
-                          {item.timeRemaining}
-                        </td>
-                        <td>{item.lastActor}</td>
-                        <td>{item.lastActionDate}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <EmptyState
-                title="No report data available"
-                description="No correspondence activity was recorded for the selected reporting period."
-              />
-            )}
-          </SectionCard>
-        </div>
-      ) : null}
-
-      {snapshot && activeTab === 'staff-contribution' ? (
-        <div
-          id="report-panel-staff-contribution"
-          role="tabpanel"
-          aria-labelledby="report-tab-staff-contribution"
-          className="report-tab-panel"
-        >
-          <SectionCard
-            title="Staff Contribution"
-            description={`Users who recorded meaningful actions on behalf of ${baseOfficeName}.`}
-            className="report-section-card"
+        {activeSection === 'history' ? (
+          <div
+            id="reports-section-history"
+            role="tabpanel"
+            aria-labelledby="reports-section-tab-history"
+            className="report-tab-panel"
           >
-            {filteredStaffContribution.length ? (
-              <div className="staff-contribution-card">
-                <div className="staff-contribution-table-wrap">
-                  <table className="staff-contribution-table report-table report-table--staff">
-                    <colgroup>
-                      <col className="report-col--staff-member" />
-                      <col className="report-col--staff-correspondence" />
-                      <col className="report-col--staff-actions" />
-                      <col className="report-col--staff-stages" />
-                      <col className="report-col--staff-receipts" />
-                      <col className="report-col--staff-response" />
-                      <col className="report-col--staff-last-activity" />
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        <th scope="col">Staff Member</th>
-                        <th scope="col" aria-label="Correspondence Worked On">
-                          Correspondence
-                        </th>
-                        <th scope="col" aria-label="Meaningful Actions Recorded">
-                          Actions
-                        </th>
-                        <th scope="col" aria-label="Office Stages Completed">
-                          Stages Completed
-                        </th>
-                        <th scope="col" aria-label="Receipt Acknowledgements">
-                          Receipts
-                        </th>
-                        <th scope="col" aria-label="Average Response Time">
-                          Avg. Response
-                        </th>
-                        <th scope="col">Last Activity</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredStaffContribution.map((staff) => (
-                        <tr key={staff.name}>
-                          <th scope="row">{staff.name}</th>
-                          <td data-label="Correspondence">{staff.correspondenceWorkedOn}</td>
-                          <td data-label="Actions">{staff.meaningfulActions}</td>
-                          <td data-label="Stages Completed">{staff.stagesCompleted}</td>
-                          <td data-label="Receipts">{staff.receiptAcknowledgements}</td>
-                          <td data-label="Avg. Response">{staff.averageResponseTime}</td>
-                          <td data-label="Last Activity">{staff.lastActivity}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : (
-              <EmptyState
-                title="No report data available"
-                description="No correspondence activity was recorded for the selected reporting period."
-              />
-            )}
-          </SectionCard>
-        </div>
-      ) : null}
+            <FormalReportHistoryWorkspace
+              currentUser={reportsCurrentUser}
+              effectiveOffice={workspace?.office ?? null}
+              reportsService={reportsService}
+              showToast={showToast}
+            />
+          </div>
+        ) : null}
       </div>
     </section>
   )

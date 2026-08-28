@@ -1,9 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { addAuditLog } from '../data/auditLogs'
+import { getUserRoleLabel } from '../constants/roles'
 import { mockCorrespondence } from '../data/correspondence'
-import { offices } from '../data/offices'
+import { offices, resolveOffice } from '../data/offices'
+import {
+  normalizeAttachment,
+  revokeAttachmentUrls,
+  validateAttachmentFile,
+} from '../utils/attachments.js'
+import {
+  createMockCorrespondenceId,
+  getCorrespondenceApiId,
+  getCorrespondenceById as findCorrespondenceById,
+  getCorrespondenceByReference as findCorrespondenceByReference,
+  getCorrespondenceDisplayReference,
+} from '../utils/correspondence.js'
 import { normalizeCorrespondenceRecord } from '../utils/correspondencePermissions'
+import { normalizeOffice } from '../utils/offices.js'
 import CorrespondenceContext from './correspondence-context'
 import { useNotification } from './useNotification'
 
@@ -57,11 +71,7 @@ function getDocumentCode(documentType) {
 }
 
 function getRoleLabel(role) {
-  return {
-    OFFICE_USER: 'Office User',
-    OFFICE_SUPERVISOR: "Director's Administrator",
-    SYSTEM_ADMIN: 'System Administrator',
-  }[role] ?? role
+  return getUserRoleLabel(role)
 }
 
 function formatDateDisplay(dateValue) {
@@ -96,22 +106,6 @@ function parseDisplayDate(value) {
 
 function formatTimestampDisplay(dateValue = SYSTEM_DATE, timeLabel = SYSTEM_TIME) {
   return `${formatDateDisplay(dateValue)}, ${timeLabel}`
-}
-
-function formatFileSize(sizeInBytes) {
-  if (!sizeInBytes) {
-    return '0 KB'
-  }
-
-  if (sizeInBytes >= 1024 * 1024) {
-    return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
-  }
-
-  return `${Math.max(1, Math.round(sizeInBytes / 1024))} KB`
-}
-
-function getOfficeByName(officeName) {
-  return offices.find((office) => office.name === officeName) ?? null
 }
 
 function getDateGroup(dateValue) {
@@ -221,7 +215,7 @@ function createReference(records, documentType) {
   const currentYear = '2026'
   const documentCode = getDocumentCode(documentType)
   const matchingCount = records.filter((record) =>
-    record.reference.startsWith(`MRH/${documentCode}/${currentYear}/`),
+    getCorrespondenceDisplayReference(record).startsWith(`MRH/${documentCode}/${currentYear}/`),
   ).length
 
   // TODO: Replace this frontend-generated reference with a backend-generated sequence to prevent duplicates.
@@ -229,24 +223,35 @@ function createReference(records, documentType) {
 }
 
 function normalizeJourneyEntry(entry, index) {
+  const office = normalizeOffice(entry.office ?? entry.officeName ?? entry.officeId ?? null, offices)
+  const fromOffice = normalizeOffice(entry.fromOffice ?? entry.previousValue ?? null, offices)
+  const toOffice = normalizeOffice(entry.toOffice ?? entry.newValue ?? null, offices)
+
   return {
     id: entry.id ?? `journey-${index + 1}`,
     title: entry.title ?? 'Office movement recorded',
     description: entry.description ?? '',
     actionType: entry.actionType ?? entry.type ?? 'Updated',
-    office: entry.office ?? entry.officeName ?? '',
-    officeId: entry.officeId ?? '',
+    office,
+    officeId: office?.id ?? null,
+    officeName: office?.name ?? '',
     actor: entry.actor ?? entry.userName ?? 'System',
     actorId: entry.actorId ?? entry.userId ?? '',
     time: entry.time ?? entry.timestamp ?? '',
     state: entry.state ?? 'done',
-    fromOffice: entry.fromOffice ?? entry.previousValue ?? '',
-    toOffice: entry.toOffice ?? entry.newValue ?? '',
+    fromOffice,
+    fromOfficeId: fromOffice?.id ?? null,
+    fromOfficeName: fromOffice?.name ?? '',
+    toOffice,
+    toOfficeId: toOffice?.id ?? null,
+    toOfficeName: toOffice?.name ?? '',
     note: entry.note ?? '',
   }
 }
 
 function normalizeActionEntry(entry, index) {
+  const office = normalizeOffice(entry.office ?? entry.officeName ?? entry.officeId ?? null, offices)
+
   return {
     id: entry.id ?? `action-${index + 1}`,
     type: entry.type ?? entry.actionType ?? 'Updated',
@@ -255,9 +260,9 @@ function normalizeActionEntry(entry, index) {
     description: entry.description ?? '',
     actor: entry.actor ?? entry.userName ?? 'System',
     actorId: entry.actorId ?? entry.userId ?? '',
-    office: entry.office ?? entry.officeName ?? '',
-    officeId: entry.officeId ?? '',
-    officeName: entry.officeName ?? entry.office ?? '',
+    office,
+    officeId: office?.id ?? null,
+    officeName: office?.name ?? '',
     role: entry.role ?? '',
     userId: entry.userId ?? entry.actorId ?? '',
     userName: entry.userName ?? entry.actor ?? 'System',
@@ -312,25 +317,21 @@ function normalizeRecord(record) {
     actions: (normalizedRecord.actions ?? []).map((entry, index) =>
       normalizeActionEntry(entry, index),
     ),
-    attachments: (normalizedRecord.attachments ?? []).map((attachment) => ({
-      ...attachment,
-      fileType: attachment.fileType ?? attachment.type ?? '',
-      mimeType: attachment.mimeType ?? '',
-      description: attachment.description ?? '',
-      uploadedByUserId: attachment.uploadedByUserId ?? attachment.uploadedById ?? '',
-      uploadedByUserName: attachment.uploadedByUserName ?? attachment.uploadedBy ?? '',
-      uploadedByOfficeId: attachment.uploadedByOfficeId ?? attachment.officeId ?? '',
-      uploadedByOfficeName: attachment.uploadedByOfficeName ?? attachment.office ?? '',
-      uploadedAt: attachment.uploadedAt ?? attachment.date ?? '',
-      // TODO: Replace temporary object URLs with protected backend file URLs and durable storage once backend file services are available.
-      fileUrl:
-        attachment.fileUrl ??
-        attachment.objectUrl ??
-        (attachment.fileObject ? URL.createObjectURL(attachment.fileObject) : ''),
-      fileObject: attachment.fileObject ?? null,
-      isTemporary: attachment.isTemporary ?? Boolean(attachment.fileObject),
-    })),
-    notes: (normalizedRecord.notes ?? []).map((note) => ({ ...note })),
+    attachments: (normalizedRecord.attachments ?? []).map((attachment) =>
+      normalizeAttachment(attachment, {
+        correspondenceId: normalizedRecord.id,
+      }),
+    ),
+    notes: (normalizedRecord.notes ?? []).map((note) => {
+      const office = normalizeOffice(note.office ?? note.officeId ?? note.officeName ?? null, offices)
+
+      return {
+        ...note,
+        office,
+        officeId: office?.id ?? null,
+        officeName: office?.name ?? '',
+      }
+    }),
   }
 }
 
@@ -352,9 +353,9 @@ function createAuditAction({
     description,
     actor: currentUser.fullName,
     actorId: currentUser.id,
-    office: currentUser.officeName,
-    officeId: currentUser.officeId,
-    officeName: currentUser.officeName,
+    office: currentUser.office,
+    officeId: currentUser.office?.id ?? null,
+    officeName: currentUser.office?.name ?? '',
     role: currentUser.role,
     userId: currentUser.id,
     userName: currentUser.fullName,
@@ -365,13 +366,13 @@ function createAuditAction({
   }
 }
 
-function appendSystemAuditLog(reference, action, description) {
+function appendSystemAuditLog(referenceNumber, action, description) {
   addAuditLog({
     id: `audit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     type: action.actionType,
     title: action.title,
-    description: description || `${reference} - ${action.title}`,
-    reference,
+    description: description || `${referenceNumber} - ${action.title}`,
+    reference: referenceNumber,
     user: action.userName,
     office: action.officeName,
     role: action.role,
@@ -398,30 +399,56 @@ export function CorrespondenceProvider({ children }) {
     () => () => {
       recordsRef.current.forEach((record) => {
         record.attachments.forEach((attachment) => {
-          if (attachment.isTemporary && attachment.fileUrl?.startsWith('blob:')) {
-            URL.revokeObjectURL(attachment.fileUrl)
-          }
+          revokeAttachmentUrls(attachment)
         })
       })
     },
     [],
   )
 
-  const getCorrespondenceByReference = (reference) => {
-    const normalizedReference = decodeURIComponent(reference)
-    const record = records.find(
-      (item) => item.reference.toLowerCase() === normalizedReference.toLowerCase(),
-    )
-
+  const getCorrespondenceById = (id) => {
+    const record = findCorrespondenceById(records, id)
     return record ? cloneRecord(record) : null
   }
 
-  const updateCorrespondence = (reference, updater) => {
+  const getCorrespondenceByReference = (referenceNumber) => {
+    const record = findCorrespondenceByReference(records, referenceNumber)
+    return record ? cloneRecord(record) : null
+  }
+
+  const resolveCurrentRecord = (currentRecords, correspondenceTarget) => {
+    if (!correspondenceTarget) {
+      return null
+    }
+
+    if (typeof correspondenceTarget === 'object') {
+      const targetId = getCorrespondenceApiId(correspondenceTarget)
+      return (
+        findCorrespondenceById(currentRecords, targetId) ??
+        findCorrespondenceByReference(
+          currentRecords,
+          getCorrespondenceDisplayReference(correspondenceTarget),
+        ) ??
+        null
+      )
+    }
+
+    return (
+      findCorrespondenceById(currentRecords, correspondenceTarget) ??
+      findCorrespondenceByReference(currentRecords, correspondenceTarget) ??
+      null
+    )
+  }
+
+  const updateCorrespondence = (correspondenceTarget, updater) => {
     let updatedRecord = null
 
     setRecords((current) =>
       current.map((record) => {
-        if (record.reference !== reference) {
+        const recordId = getCorrespondenceApiId(record)
+        const targetRecord = resolveCurrentRecord(current, correspondenceTarget)
+
+        if (!targetRecord || recordId !== getCorrespondenceApiId(targetRecord)) {
           return record
         }
 
@@ -435,26 +462,30 @@ export function CorrespondenceProvider({ children }) {
     return updatedRecord ? cloneRecord(updatedRecord) : null
   }
 
-  const addAuditAction = (reference, action, description) => {
+  const addAuditAction = (correspondenceTarget, action, description) => {
     const normalizedAction = normalizeActionEntry(action, 0)
 
-    updateCorrespondence(reference, (record) => ({
+    updateCorrespondence(correspondenceTarget, (record) => ({
       ...record,
       actions: [normalizedAction, ...record.actions],
     }))
 
-    appendSystemAuditLog(reference, normalizedAction, description)
+    const referenceNumber =
+      typeof correspondenceTarget === 'object'
+        ? getCorrespondenceDisplayReference(correspondenceTarget)
+        : getCorrespondenceDisplayReference(resolveCurrentRecord(records, correspondenceTarget))
+    appendSystemAuditLog(referenceNumber, normalizedAction, description)
     return normalizedAction
   }
 
   const addCorrespondence = (formValues, currentUser) => {
-    const reference = createReference(records, formValues.documentType)
+    const referenceNumber = createReference(records, formValues.documentType)
     const registeredTimestamp = formatTimestampDisplay(SYSTEM_DATE, '9:00 AM')
     const deadlineDisplay = formatDateDisplay(formValues.stageDeadline)
     const deadlineDetails = getDeadlineDetails(deadlineDisplay)
-    const destinationOffice = getOfficeByName(formValues.destinationOffice)
+    const destinationOffice = resolveOffice(formValues.destinationOffice)
     const isRoutedToAnotherOffice =
-      Boolean(destinationOffice?.id) && destinationOffice.id !== currentUser.officeId
+      Boolean(destinationOffice?.id) && destinationOffice.id !== currentUser.office?.id
     const action = createAuditAction({
       actionType: 'Registered',
       title: 'Correspondence registered',
@@ -465,35 +496,28 @@ export function CorrespondenceProvider({ children }) {
     })
     const attachmentEntry = formValues.attachment
       ? [
-          {
-            id: `att-${reference.toLowerCase().replaceAll('/', '-')}`,
-            fileName: formValues.attachment.name,
-            fileType: formValues.attachment.fileType || formValues.attachment.extension.replace('.', '').toUpperCase(),
-            type: formValues.attachment.fileType || formValues.attachment.extension.replace('.', '').toUpperCase(),
-            mimeType: formValues.attachment.mimeType || '',
-            description: '',
-            uploadedByUserId: currentUser.id,
-            uploadedByUserName: currentUser.fullName,
-            uploadedBy: currentUser.fullName,
-            uploadedById: currentUser.id,
-            uploadedByOfficeId: currentUser.officeId,
-            uploadedByOfficeName: currentUser.officeName,
-            office: currentUser.officeName,
-            officeId: currentUser.officeId,
-            uploadedAt: registeredTimestamp,
-            date: registeredTimestamp,
-            size: formatFileSize(formValues.attachment.sizeInBytes || formValues.attachment.size),
-            sizeInBytes: formValues.attachment.sizeInBytes || formValues.attachment.size,
-            fileUrl: formValues.attachment.fileUrl || '',
-            fileObject: formValues.attachment.fileObject || null,
-            isTemporary: Boolean(formValues.attachment.isTemporary),
-          },
+          normalizeAttachment(
+            {
+              ...formValues.attachment,
+              correspondenceId: null,
+              uploadedAt: registeredTimestamp,
+              uploadedBy: {
+                id: currentUser.id,
+                fullName: currentUser.fullName,
+                office: currentUser.office,
+              },
+              uploadedForOffice: currentUser.office,
+            },
+            {
+              source: formValues.attachment.source ?? 'local',
+            },
+          ),
         ]
       : []
 
     const newRecord = normalizeRecord({
-      id: `corr-${reference.split('/').pop()?.toLowerCase()}`,
-      reference,
+      id: createMockCorrespondenceId(),
+      referenceNumber,
       subject: formValues.subject.trim(),
       documentType: formValues.documentType,
       sender: formValues.sender.trim(),
@@ -534,7 +558,7 @@ export function CorrespondenceProvider({ children }) {
       isArchived: false,
       journey: [
         {
-          id: `journey-${reference.toLowerCase().replaceAll('/', '-')}-1`,
+          id: `journey-${Date.now()}-1`,
           title: 'Correspondence registered',
           description: `Recorded by ${currentUser.fullName} on behalf of ${currentUser.officeName}.`,
           actionType: 'Registered',
@@ -551,7 +575,7 @@ export function CorrespondenceProvider({ children }) {
       notes: formValues.administrativeNotes.trim()
         ? [
             {
-              id: `note-${reference.toLowerCase().replaceAll('/', '-')}`,
+              id: `note-${Date.now()}-registration`,
               author: currentUser.fullName,
               authorId: currentUser.id,
               office: currentUser.officeName,
@@ -564,7 +588,11 @@ export function CorrespondenceProvider({ children }) {
     })
 
     setRecords((current) => [newRecord, ...current])
-    appendSystemAuditLog(reference, action, `${reference} - ${formValues.subject.trim()}`)
+    appendSystemAuditLog(
+      referenceNumber,
+      action,
+      `${referenceNumber} - ${formValues.subject.trim()}`,
+    )
 
     if (isRoutedToAnotherOffice && destinationOffice) {
       const receivedNotification = createReceivedNotification({
@@ -572,8 +600,8 @@ export function CorrespondenceProvider({ children }) {
         sourceOffice: { id: currentUser.officeId, name: currentUser.officeName },
         destinationOffice,
         createdAt: registeredTimestamp,
-        message: `${currentUser.officeName} registered and routed ${newRecord.reference} to ${destinationOffice.name}.`,
-        eventId: `registration-route-${newRecord.reference}`,
+        message: `${currentUser.officeName} registered and routed ${newRecord.referenceNumber} to ${destinationOffice.name}.`,
+        eventId: `registration-route-${newRecord.id}`,
         title: 'New correspondence received',
       })
 
@@ -583,13 +611,14 @@ export function CorrespondenceProvider({ children }) {
     return cloneRecord(newRecord)
   }
 
-  const updateCorrespondenceStage = (reference, updateValues, currentUser) => {
+  const updateCorrespondenceStage = (correspondenceTarget, updateValues, currentUser) => {
     const timestamp = formatTimestampDisplay(SYSTEM_DATE, '10:42 AM')
     const deadlineDisplay = formatDateDisplay(updateValues.stageDeadline)
     const deadlineDetails = getDeadlineDetails(deadlineDisplay)
     let updated = null
 
-    updateCorrespondence(reference, (record) => {
+    updateCorrespondence(correspondenceTarget, (record) => {
+      const referenceNumber = getCorrespondenceDisplayReference(record)
       const action = createAuditAction({
         actionType: 'Stage Updated',
         title: 'Stage updated',
@@ -655,7 +684,11 @@ export function CorrespondenceProvider({ children }) {
         ]
       }
 
-      appendSystemAuditLog(reference, action, `${reference} - stage updated to ${updateValues.stage}`)
+      appendSystemAuditLog(
+        referenceNumber,
+        action,
+        `${referenceNumber} - stage updated to ${updateValues.stage}`,
+      )
       return updated
     })
 
@@ -666,14 +699,15 @@ export function CorrespondenceProvider({ children }) {
     return updated.error ? updated : cloneRecord(updated)
   }
 
-  const forwardCorrespondence = (reference, updateValues, currentUser) => {
+  const forwardCorrespondence = (correspondenceTarget, updateValues, currentUser) => {
     const timestamp = formatTimestampDisplay(SYSTEM_DATE, SYSTEM_FORWARD_TIME)
     const deadlineDisplay = formatDateDisplay(updateValues.stageDeadline)
     const deadlineDetails = getDeadlineDetails(deadlineDisplay)
     let updated = null
 
-    updateCorrespondence(reference, (record) => {
-      const destinationOffice = getOfficeByName(updateValues.destinationOffice)
+    updateCorrespondence(correspondenceTarget, (record) => {
+      const referenceNumber = getCorrespondenceDisplayReference(record)
+      const destinationOffice = resolveOffice(updateValues.destinationOffice)
       const action = createAuditAction({
         actionType: 'Forwarded',
         title: `Forwarded to ${updateValues.destinationOffice}`,
@@ -690,7 +724,7 @@ export function CorrespondenceProvider({ children }) {
         forwardingHistory: [
           ...(record.forwardingHistory ?? []),
           {
-            id: `forwarding-${record.reference}-${Date.now()}`,
+            id: `forwarding-${record.id}-${Date.now()}`,
             fromOfficeId: currentUser.officeId,
             fromOfficeName: currentUser.officeName,
             toOfficeId: destinationOffice?.id ?? '',
@@ -758,13 +792,17 @@ export function CorrespondenceProvider({ children }) {
         ],
       }
 
-      appendSystemAuditLog(reference, action, `${reference} - forwarded to ${updateValues.destinationOffice}`)
+      appendSystemAuditLog(
+        referenceNumber,
+        action,
+        `${referenceNumber} - forwarded to ${updateValues.destinationOffice}`,
+      )
       return updated
     })
 
     if (updated && updated.forwardingHistory.length) {
       const forwardingEvent = updated.forwardingHistory.at(-1)
-      const destinationOffice = getOfficeByName(updateValues.destinationOffice)
+      const destinationOffice = resolveOffice(updateValues.destinationOffice)
 
       if (destinationOffice) {
         addNotification(
@@ -774,7 +812,7 @@ export function CorrespondenceProvider({ children }) {
             sourceOffice: { id: currentUser.officeId, name: currentUser.officeName },
             destinationOffice,
             createdAt: timestamp,
-            message: `${currentUser.officeName} forwarded ${updated.reference} to ${destinationOffice.name}.`,
+            message: `${currentUser.officeName} forwarded ${updated.referenceNumber} to ${destinationOffice.name}.`,
             eventId: forwardingEvent.id,
           }),
         )
@@ -784,13 +822,14 @@ export function CorrespondenceProvider({ children }) {
     return updated ? cloneRecord(updated) : null
   }
 
-  const acknowledgeReceipt = (reference, receiptNote, currentUser) => {
+  const acknowledgeReceipt = (correspondenceTarget, receiptNote, currentUser) => {
     const timestamp = formatTimestampDisplay(SYSTEM_DATE, SYSTEM_RECEIPT_TIME)
     let updated = null
 
-    updateCorrespondence(reference, (record) => {
+    updateCorrespondence(correspondenceTarget, (record) => {
+      const referenceNumber = getCorrespondenceDisplayReference(record)
       if (record.status !== 'Received' || record.receiptStatus !== 'Pending') {
-        updated = { error: 'already-acknowledged', reference: record.reference }
+        updated = { error: 'already-acknowledged', referenceNumber }
         return record
       }
 
@@ -845,16 +884,17 @@ export function CorrespondenceProvider({ children }) {
       }
 
       appendSystemAuditLog(
-        reference,
+        referenceNumber,
         action,
-        `${reference} - receipt acknowledged by ${currentUser.officeName}`,
+        `${referenceNumber} - receipt acknowledged by ${currentUser.officeName}`,
       )
       return updated
     })
 
     if (updated && !updated.error) {
       markCorrespondenceNotificationAsRead({
-        correspondenceReference: reference,
+        correspondenceReference: updated.referenceNumber,
+        correspondenceId: updated.id,
         destinationOfficeId: currentUser.officeId,
         destinationOfficeName: currentUser.officeName,
       })
@@ -863,11 +903,12 @@ export function CorrespondenceProvider({ children }) {
     return updated ? cloneRecord(updated) : null
   }
 
-  const completeCorrespondence = (reference, currentUser, completionNote = '') => {
+  const completeCorrespondence = (correspondenceTarget, currentUser, completionNote = '') => {
     const timestamp = formatTimestampDisplay(SYSTEM_DATE, '12:18 PM')
     let updated = null
 
-    updateCorrespondence(reference, (record) => {
+    updateCorrespondence(correspondenceTarget, (record) => {
+      const referenceNumber = getCorrespondenceDisplayReference(record)
       const action = createAuditAction({
         actionType: 'Completed',
         title: 'Correspondence completed',
@@ -928,18 +969,93 @@ export function CorrespondenceProvider({ children }) {
         ]
       }
 
-      appendSystemAuditLog(reference, action, `${reference} - correspondence completed`)
+      appendSystemAuditLog(referenceNumber, action, `${referenceNumber} - correspondence completed`)
       return updated
     })
 
     return updated ? cloneRecord(updated) : null
   }
 
-  const addNote = (reference, noteBody, currentUser) => {
+  const fileCorrespondence = (correspondenceTarget, currentUser, filingNote = '') => {
+    const timestamp = formatTimestampDisplay(SYSTEM_DATE, '12:27 PM')
+    let updated = null
+
+    updateCorrespondence(correspondenceTarget, (record) => {
+      const referenceNumber = getCorrespondenceDisplayReference(record)
+      const action = createAuditAction({
+        actionType: 'Filed',
+        title: 'Correspondence filed',
+        description: `Filed by ${currentUser.fullName} on behalf of ${currentUser.officeName}.`,
+        currentUser,
+        timestamp,
+        previousValue: record.status,
+        newValue: 'Filed',
+        note: filingNote.trim(),
+      })
+
+      updated = {
+        ...record,
+        status: 'Filed',
+        isFiled: true,
+        currentStage: 'Correspondence filed',
+        timeRemaining: 'Filed',
+        deadlineState: 'completed',
+        timeSpentInOffice: 'Filed',
+        filedAt: timestamp,
+        currentHandler: currentUser.fullName,
+        actions: [action, ...record.actions],
+        journey: [
+          normalizeJourneyEntry(
+            {
+              id: `journey-file-${Date.now()}`,
+              title: 'Correspondence filed',
+              description: `Filed by ${currentUser.fullName} on behalf of ${currentUser.officeName}.`,
+              actionType: 'Filed',
+              office: currentUser.officeName,
+              officeId: currentUser.officeId,
+              actor: currentUser.fullName,
+              actorId: currentUser.id,
+              time: timestamp,
+              state: 'current',
+              note: filingNote.trim(),
+            },
+            0,
+          ),
+          ...record.journey.map((entry) => ({
+            ...entry,
+            state: entry.state === 'current' ? 'done' : entry.state,
+          })),
+        ],
+      }
+
+      if (filingNote.trim()) {
+        updated.notes = [
+          {
+            id: `note-file-${Date.now()}`,
+            author: currentUser.fullName,
+            authorId: currentUser.id,
+            office: currentUser.officeName,
+            officeId: currentUser.officeId,
+            date: timestamp,
+            body: filingNote.trim(),
+          },
+          ...record.notes,
+        ]
+      }
+
+      appendSystemAuditLog(referenceNumber, action, `${referenceNumber} - correspondence filed`)
+      return updated
+    })
+
+    return updated ? cloneRecord(updated) : null
+  }
+
+  const addNote = (correspondenceTarget, noteBody, currentUser) => {
     const timestamp = formatTimestampDisplay(SYSTEM_DATE, '12:35 PM')
     let updated = null
 
-    updateCorrespondence(reference, (record) => {
+    updateCorrespondence(correspondenceTarget, (record) => {
+      const referenceNumber = getCorrespondenceDisplayReference(record)
       const action = createAuditAction({
         actionType: 'Note Added',
         title: 'Workflow note added',
@@ -966,22 +1082,49 @@ export function CorrespondenceProvider({ children }) {
         actions: [action, ...record.actions],
       }
 
-      appendSystemAuditLog(reference, action, `${reference} - workflow note added`)
+      appendSystemAuditLog(referenceNumber, action, `${referenceNumber} - workflow note added`)
       return updated
     })
 
     return updated ? cloneRecord(updated) : null
   }
 
-  const addAttachment = (reference, file, currentUser) => {
+  const addAttachment = (correspondenceTarget, file, currentUser) => {
     const timestamp = formatTimestampDisplay(SYSTEM_DATE, '12:48 PM')
     let updated = null
 
-    updateCorrespondence(reference, (record) => {
-      const fileName = file.fileName || file.name
-      const fileType = file.fileType || file.type || file.extension?.replace('.', '').toUpperCase() || 'FILE'
-      const sizeLabel = file.sizeLabel || file.size || formatFileSize(file.sizeInBytes)
+    updateCorrespondence(correspondenceTarget, (record) => {
+      const referenceNumber = getCorrespondenceDisplayReference(record)
       const descriptionNote = file.description?.trim() ?? ''
+      const fileObject = file.fileObject ?? file.originalFile ?? file
+      const validation = fileObject instanceof File ? validateAttachmentFile(fileObject) : { valid: true }
+
+      if (!validation.valid) {
+        updated = {
+          error: validation.errors[0]?.code ?? 'INVALID_ATTACHMENT',
+          validation,
+        }
+        return record
+      }
+
+      const normalizedAttachment = normalizeAttachment(
+        {
+          ...file,
+          description: descriptionNote,
+          correspondenceId: record.id,
+          uploadedAt: timestamp,
+          uploadedBy: {
+            id: currentUser.id,
+            fullName: currentUser.fullName,
+            office: currentUser.office,
+          },
+          uploadedForOffice: currentUser.office,
+        },
+        {
+          source: file.source ?? (file.fileObject ? 'local' : 'mock'),
+        },
+      )
+      const fileName = normalizedAttachment.originalFilename
       const action = createAuditAction({
         actionType: 'Attachment Added',
         title: 'Attachment added',
@@ -995,35 +1138,13 @@ export function CorrespondenceProvider({ children }) {
       updated = {
         ...record,
         attachments: [
-          {
-            id: `att-${Date.now()}`,
-            fileName,
-            fileType,
-            type: fileType,
-            size: sizeLabel,
-            sizeInBytes: file.sizeInBytes ?? file.size ?? 0,
-            mimeType: file.mimeType ?? file.fileObject?.type ?? '',
-            description: descriptionNote,
-            uploadedByUserId: currentUser.id,
-            uploadedByUserName: currentUser.fullName,
-            uploadedBy: currentUser.fullName,
-            uploadedById: currentUser.id,
-            uploadedByOfficeId: currentUser.officeId,
-            uploadedByOfficeName: currentUser.officeName,
-            office: currentUser.officeName,
-            officeId: currentUser.officeId,
-            uploadedAt: timestamp,
-            date: timestamp,
-            fileUrl: file.fileUrl ?? file.objectUrl ?? '',
-            fileObject: file.fileObject ?? file.originalFile ?? null,
-            isTemporary: Boolean(file.isTemporary ?? file.objectUrl ?? file.fileObject),
-          },
+          normalizedAttachment,
           ...record.attachments,
         ],
         actions: [action, ...record.actions],
       }
 
-      appendSystemAuditLog(reference, action, `${reference} - attachment added: ${fileName}`)
+      appendSystemAuditLog(referenceNumber, action, `${referenceNumber} - attachment added: ${fileName}`)
       return updated
     })
 
@@ -1041,7 +1162,9 @@ export function CorrespondenceProvider({ children }) {
     forwardCorrespondence,
     acknowledgeReceipt,
     completeCorrespondence,
+    fileCorrespondence,
     addCorrespondenceNote: addNote,
+    getCorrespondenceById,
     getCorrespondenceByReference,
     generateNextReference: (documentType) => createReference(records, documentType),
     getRoleLabel,

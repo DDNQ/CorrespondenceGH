@@ -1,54 +1,5 @@
-import { getOfficeById } from '../data/offices'
-import { ApiError, apiRequest } from './apiClient'
-
-function normalizeWhitespace(value = '') {
-  return value.trim().replace(/\s+/g, ' ')
-}
-
-function stripDiacritics(value = '') {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-}
-
-function normalizePreviewPart(value = '') {
-  return stripDiacritics(normalizeWhitespace(value))
-    .toLowerCase()
-    .replace(/['\u2019]/g, '')
-    .replace(/[^a-z0-9\s.]/g, ' ')
-    .replace(/\s+/g, '.')
-    .replace(/\.+/g, '.')
-    .replace(/^\.+|\.+$/g, '')
-}
-
-function buildDisplayName({ firstName = '', middleName = '', lastName = '' }) {
-  return [firstName, middleName, lastName].map(normalizeWhitespace).filter(Boolean).join(' ')
-}
-
-function normalizeBackendUser(user) {
-  return {
-    id: user.id,
-    firstName: normalizeWhitespace(user.firstName ?? ''),
-    middleName: normalizeWhitespace(user.middleName ?? ''),
-    lastName: normalizeWhitespace(user.lastName ?? ''),
-    fullName:
-      user.displayName ||
-      user.fullName ||
-      buildDisplayName({
-        firstName: user.firstName,
-        middleName: user.middleName,
-        lastName: user.lastName,
-      }),
-    email: user.email ?? '',
-    role: user.role ?? '',
-    officeId: user.officeId ?? '',
-    officeName: user.officeName ?? '',
-    phoneNumber: normalizeWhitespace(user.phoneNumber ?? ''),
-    status: user.accountStatus ?? user.status ?? 'Active',
-    accountStatus: user.accountStatus ?? user.status ?? 'Active',
-    lastLogin: user.lastLogin ?? 'Not yet signed in',
-    createdAt: user.createdAt ?? '',
-    password: '',
-  }
-}
+import { ApiError } from './apiClient.js'
+import { getServiceBundle } from './serviceProvider.js'
 
 function mapUserServiceError(error, action = 'create') {
   if (error instanceof ApiError) {
@@ -135,37 +86,13 @@ function mapUserServiceError(error, action = 'create') {
   )
 }
 
-export function getExpectedEmailPreview({ firstName = '', lastName = '', officeId = '' }) {
-  const office = getOfficeById(officeId)
-  const previewFirstName = normalizePreviewPart(firstName)
-  const previewLastName = normalizePreviewPart(lastName)
-  const username = [previewFirstName, previewLastName].filter(Boolean).join('.')
-
-  if (!office?.emailSubdomain || !username) {
-    return ''
-  }
-
-  return `${username}@${office.emailSubdomain}.mrh.gov.gh`
+export function getExpectedEmailPreview(input) {
+  return getServiceBundle().users.getExpectedEmailPreview(input)
 }
 
 export async function createUser(payload, options = {}) {
   try {
-    const response = await apiRequest('/users', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      signal: options.signal,
-    })
-
-    if (!response?.user) {
-      throw new ApiError('The backend returned an invalid user response.', {
-        code: 'INVALID_RESPONSE',
-      })
-    }
-
-    return {
-      user: normalizeBackendUser(response.user),
-      auditEntry: response.auditEntry ?? null,
-    }
+    return await getServiceBundle().users.createUser(payload, options)
   } catch (error) {
     throw mapUserServiceError(error, 'create')
   }
@@ -173,22 +100,7 @@ export async function createUser(payload, options = {}) {
 
 export async function updateUser(userId, payload, options = {}) {
   try {
-    const response = await apiRequest(`/users/${userId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-      signal: options.signal,
-    })
-
-    if (!response?.user) {
-      throw new ApiError('The backend returned an invalid user response.', {
-        code: 'INVALID_RESPONSE',
-      })
-    }
-
-    return {
-      user: normalizeBackendUser(response.user),
-      auditEntry: response.auditEntry ?? null,
-    }
+    return await getServiceBundle().users.updateUser(userId, payload, options)
   } catch (error) {
     throw mapUserServiceError(error, 'update')
   }

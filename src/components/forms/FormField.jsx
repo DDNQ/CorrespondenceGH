@@ -11,6 +11,7 @@ function FormField({
   autoComplete,
   inputRef,
   name,
+  disabled = false,
   className = '',
 }) {
   return (
@@ -29,6 +30,7 @@ function FormField({
         placeholder={placeholder}
         autoComplete={autoComplete}
         readOnly={readOnly}
+        disabled={disabled}
         className={readOnly ? 'readonly-field' : undefined}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : undefined}

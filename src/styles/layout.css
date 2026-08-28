@@ -1,7 +1,7 @@
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-columns: var(--app-sidebar-width, var(--sidebar-width)) minmax(0, 1fr);
 }
 
 .app-content {
@@ -11,19 +11,20 @@
 }
 
 .app-main {
-  padding: 1.7rem 2rem 0;
+  padding: calc(1.7rem * var(--app-density-scale, 1))
+    calc(2rem * var(--app-density-scale, 1)) 0;
   background: var(--color-surface);
 }
 
 .app-main__content {
   width: 100%;
-  max-width: 1560px;
+  max-width: var(--app-layout-max-width, 1560px);
   margin: 0 auto;
   min-width: 0;
 }
 
 .app-eyebrow {
-  font-size: 0.8125rem;
+  font-size: calc(0.8125rem * var(--app-density-scale, 1));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -34,12 +35,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: calc(0.5rem * var(--app-density-scale, 1));
   width: fit-content;
-  min-height: 2.875rem;
-  padding: 0.8rem 1.1rem;
+  min-height: calc(2.875rem * var(--app-density-scale, 1));
+  padding: calc(0.8rem * var(--app-density-scale, 1))
+    calc(1.1rem * var(--app-density-scale, 1));
   border: 1px solid transparent;
-  border-radius: 0.85rem;
+  border-radius: calc(0.85rem * var(--app-density-scale, 1));
   background: var(--color-royal-blue);
   color: var(--color-white);
   font-weight: 700;
@@ -87,22 +89,22 @@
 }
 
 .page-placeholder {
-  padding: 2rem;
+  padding: calc(2rem * var(--app-density-scale, 1));
 }
 
 .page-placeholder__header {
   display: grid;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  gap: calc(0.5rem * var(--app-density-scale, 1));
+  margin-bottom: calc(1.5rem * var(--app-density-scale, 1));
 }
 
 .page-placeholder__meta {
   display: grid;
-  gap: 1rem;
+  gap: calc(1rem * var(--app-density-scale, 1));
 }
 
 .page-placeholder__meta div {
-  padding: 1rem;
+  padding: calc(1rem * var(--app-density-scale, 1));
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -117,28 +119,30 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 1.5rem;
+  padding: calc(1.5rem * var(--app-density-scale, 1));
 }
 
 .status-card {
   width: min(100%, 520px);
-  padding: 2rem;
+  padding: calc(2rem * var(--app-density-scale, 1));
   display: grid;
-  gap: 1rem;
+  gap: calc(1rem * var(--app-density-scale, 1));
 }
 
 .app-footer {
   width: 100%;
-  max-width: 1560px;
+  max-width: var(--app-layout-max-width, 1560px);
   margin: 0 auto;
-  padding: 1.2rem 2rem 1.45rem;
+  padding: calc(1.2rem * var(--app-density-scale, 1))
+    calc(2rem * var(--app-density-scale, 1))
+    calc(1.45rem * var(--app-density-scale, 1));
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: calc(1rem * var(--app-density-scale, 1));
   min-width: 0;
   color: var(--color-slate);
-  font-size: 0.88rem;
+  font-size: calc(0.88rem * var(--app-density-scale, 1));
 }
 
 .app-footer span {
@@ -148,6 +152,7 @@
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
+    overflow-x: clip;
   }
 
   .app-main {

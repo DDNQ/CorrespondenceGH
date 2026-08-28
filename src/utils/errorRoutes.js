@@ -1,11 +1,11 @@
-import { ROLES } from '../constants/roles'
+import { isAdmin } from '../constants/roles'
 
 export function getDashboardRoute(user) {
   if (!user) {
     return '/login'
   }
 
-  if (user.role === ROLES.SYSTEM_ADMIN) {
+  if (isAdmin(user)) {
     return '/admin/dashboard'
   }
 

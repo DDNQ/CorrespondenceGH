@@ -174,6 +174,14 @@
   box-shadow: none;
 }
 
+.auth-card--panel {
+  padding: 1.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 1.1rem;
+  background: rgba(15, 23, 42, 0.18);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.14);
+}
+
 .auth-card__header {
   display: grid;
   gap: 0.25rem;
@@ -209,8 +217,7 @@
   font-size: 0.9rem;
 }
 
-.form-field__input,
-.password-field {
+.form-field__input {
   width: 100%;
   min-height: 2.9rem;
   border: 1px solid rgba(148, 163, 184, 0.22);
@@ -252,26 +259,69 @@
 }
 
 .password-field {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-height: 2.9rem;
+  background: #ffffff !important;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 0.95rem;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .password-field__input {
-  min-height: 2.9rem;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
   padding: 0.8rem 0 0.8rem 0.95rem;
-  border-radius: 0.95rem;
-  color: rgba(248, 250, 252, 0.95);
-  background: transparent;
+  border-radius: 0;
+  color: #0f172a;
+  background: transparent !important;
+  border: 0 !important;
+  outline: 0;
+  box-shadow: none !important;
+}
+
+.password-field__input:-webkit-autofill,
+.password-field__input:-webkit-autofill:hover,
+.password-field__input:-webkit-autofill:focus,
+.password-field__input:-webkit-autofill:active {
+  -webkit-text-fill-color: #0f172a;
+  caret-color: #0f172a;
+  -webkit-box-shadow: 0 0 0 1000px #e8f0fe inset !important;
+  box-shadow: 0 0 0 1000px #e8f0fe inset !important;
+}
+
+.password-field__input:-webkit-autofill + .password-field__toggle,
+.password-field__input:-webkit-autofill:hover + .password-field__toggle,
+.password-field__input:-webkit-autofill:focus + .password-field__toggle,
+.password-field__input:-webkit-autofill:active + .password-field__toggle {
+  background: #e8f0fe !important;
 }
 
 .password-field__toggle {
-  min-height: 2.9rem;
+  align-self: stretch;
   width: 2.9rem;
-  display: grid;
-  place-items: center;
-  background: transparent;
-  color: rgba(148, 163, 184, 0.86);
+  height: 100%;
+  flex-shrink: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  color: #64748b;
+  border: 0 !important;
+  border-left: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+}
+
+.password-field__toggle:hover,
+.password-field__toggle:active,
+.password-field__toggle:focus {
+  background: transparent !important;
+  color: #334155;
 }
 
 .checkbox-field {
@@ -313,6 +363,49 @@
 .auth-card__support span {
   font-weight: 600;
   color: rgba(226, 232, 240, 0.94);
+}
+
+.auth-summary-list {
+  margin: 0;
+  display: grid;
+  gap: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 1rem;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.18);
+}
+
+.auth-summary-list__row {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+}
+
+.auth-summary-list__row + .auth-summary-list__row {
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.auth-summary-list dt {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.78);
+}
+
+.auth-summary-list dd {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(248, 250, 252, 0.96);
+  word-break: break-word;
+}
+
+.auth-card__notice {
+  margin: 0;
+  color: rgba(148, 163, 184, 0.82);
+  font-size: 0.86rem;
+  line-height: 1.55;
 }
 
 @media (max-width: 900px) {

@@ -8,8 +8,15 @@ function SelectField({
   error,
   required = false,
   inputRef,
+  disabled = false,
   className = '',
 }) {
+  const normalizedOptions = options.map((option) =>
+    typeof option === 'object' && option !== null
+      ? { value: option.value, label: option.label ?? option.value }
+      : { value: option, label: option },
+  )
+
   return (
     <div className={`form-field ${className}`.trim()}>
       <label htmlFor={id} className="form-field__label">
@@ -21,6 +28,7 @@ function SelectField({
         id={id}
         value={value}
         onChange={onChange}
+        disabled={disabled}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : undefined}
       >
@@ -29,9 +37,9 @@ function SelectField({
             {placeholder}
           </option>
         ) : null}
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
+        {normalizedOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>

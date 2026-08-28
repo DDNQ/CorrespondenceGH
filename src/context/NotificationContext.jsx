@@ -8,6 +8,7 @@ import {
   normalizeNotification,
   notificationBelongsToOffice,
 } from '../utils/notifications'
+import { isSameOffice, normalizeOffice } from '../utils/offices.js'
 import NotificationContext from './notification-context'
 import { usePreferences } from './usePreferences'
 
@@ -103,22 +104,34 @@ export function NotificationProvider({ children }) {
   }, [persistNotifications, preferences.deadlineReminders, preferences.overdueAlerts])
 
   const markCorrespondenceNotificationAsRead = useCallback(
-    ({ correspondenceReference, destinationOfficeId = '', destinationOfficeName = '', eventType = 'Correspondence Received' }) => {
-      if (!correspondenceReference) {
+    ({
+      correspondenceId = '',
+      correspondenceReference,
+      destinationOfficeId = '',
+      destinationOfficeName = '',
+      eventType = 'Correspondence Received',
+    }) => {
+      if (!correspondenceId && !correspondenceReference) {
         return
       }
 
       setNotifications((current) => {
         const updatedNotifications = current.map((notification) => {
           const normalizedNotification = normalizeNotification(notification)
-          const matchesDestinationOffice =
-            (destinationOfficeId &&
-              normalizedNotification.destinationOfficeId === destinationOfficeId) ||
-            (destinationOfficeName &&
-              normalizedNotification.destinationOfficeName === destinationOfficeName)
+          const matchesDestinationOffice = isSameOffice(
+            normalizedNotification.destinationOffice,
+            normalizeOffice(destinationOfficeId || destinationOfficeName || null),
+          )
 
           if (
-            normalizedNotification.correspondenceReference === correspondenceReference &&
+            ((
+              correspondenceId &&
+              normalizedNotification.correspondenceId === correspondenceId
+            ) ||
+              (
+                correspondenceReference &&
+                normalizedNotification.correspondenceReference === correspondenceReference
+              )) &&
             normalizedNotification.eventType === eventType &&
             matchesDestinationOffice
           ) {

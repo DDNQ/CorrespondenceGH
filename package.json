@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify:live-auth": "node scripts/verify-live-auth.mjs",
+    "inspect:correspondence-contract": "node scripts/inspect-correspondence-contract.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.24.0",

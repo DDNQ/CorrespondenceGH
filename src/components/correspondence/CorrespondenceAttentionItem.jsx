@@ -18,11 +18,11 @@ function CorrespondenceAttentionItem({ record }) {
 
   return (
     <Link
-      to={`/correspondence/${encodeURIComponent(record.reference)}`}
+      to={`/correspondence/${encodeURIComponent(record.referenceNumber)}`}
       className="attention-item"
     >
       <div className="attention-item__primary">
-        <p className="attention-item__reference">{record.reference}</p>
+        <p className="attention-item__reference">{record.referenceNumber}</p>
         <h3>{record.subject}</h3>
         <p className="attention-item__meta">{attentionMeta}</p>
       </div>

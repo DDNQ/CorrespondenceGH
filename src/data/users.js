@@ -1,4 +1,26 @@
-import { ROLES } from '../constants/roles'
+import {
+  USER_ROLES,
+  USER_ROLE_LABELS,
+  normalizeUserRole,
+} from '../constants/roles.js'
+import { getOfficeById } from './offices.js'
+
+function normalizeMockUser(user) {
+  const office =
+    getOfficeById(user.office?.id ?? user.officeId ?? null) ??
+    user.office ??
+    null
+
+  return {
+    ...user,
+    role: normalizeUserRole(user.role) ?? '',
+    office,
+    officeId: office?.id ?? null,
+    officeName: office?.name ?? '',
+    officeCode: office?.code ?? null,
+    officeStatus: office?.status ?? null,
+  }
+}
 
 export const users = [
   {
@@ -10,9 +32,8 @@ export const users = [
     email: 'ama.mensah@mrh.gov.gh',
     emailGeneratedBySystem: false,
     password: 'Password123',
-    role: ROLES.OFFICE_USER,
-    officeId: 'office-legal',
-    officeName: 'Legal Directorate',
+    role: USER_ROLES.OFFICE_USER,
+    office: getOfficeById('office-legal'),
     phoneNumber: '',
     status: 'Active',
     accountStatus: 'Active',
@@ -27,9 +48,8 @@ export const users = [
     email: 'kwesi.boateng@mrh.gov.gh',
     emailGeneratedBySystem: false,
     password: 'Password123',
-    role: ROLES.OFFICE_SUPERVISOR,
-    officeId: 'office-legal',
-    officeName: 'Legal Directorate',
+    role: USER_ROLES.SUPERVISOR,
+    office: getOfficeById('office-legal'),
     phoneNumber: '',
     status: 'Active',
     accountStatus: 'Active',
@@ -44,9 +64,8 @@ export const users = [
     email: 'esi.owusu@mrh.gov.gh',
     emailGeneratedBySystem: false,
     password: 'Password123',
-    role: ROLES.SYSTEM_ADMIN,
-    officeId: 'office-ict',
-    officeName: 'ICT Directorate',
+    role: USER_ROLES.ADMIN,
+    office: getOfficeById('office-ict'),
     phoneNumber: '',
     status: 'Active',
     accountStatus: 'Active',
@@ -61,9 +80,8 @@ export const users = [
     email: 'grace.arthur@mrh.gov.gh',
     emailGeneratedBySystem: false,
     password: 'Password123',
-    role: ROLES.OFFICE_USER,
-    officeId: 'office-finance',
-    officeName: 'Finance Directorate',
+    role: USER_ROLES.OFFICE_USER,
+    office: getOfficeById('office-finance'),
     phoneNumber: '',
     status: 'Active',
     accountStatus: 'Active',
@@ -78,25 +96,24 @@ export const users = [
     email: 'kojo.asare@mrh.gov.gh',
     emailGeneratedBySystem: false,
     password: 'Password123',
-    role: ROLES.OFFICE_SUPERVISOR,
-    officeId: 'office-procurement',
-    officeName: 'Procurement Directorate',
+    role: USER_ROLES.SUPERVISOR,
+    office: getOfficeById('office-procurement'),
     phoneNumber: '',
     status: 'Inactive',
     accountStatus: 'Inactive',
     lastLogin: '14 Jul 2026, 11:40 AM',
   },
-]
+].map(normalizeMockUser)
 
 export const mockUsers = users
 
 export const roleOptions = [
-  { value: ROLES.OFFICE_USER, label: 'Office User' },
-  { value: ROLES.OFFICE_SUPERVISOR, label: 'Office Supervisor' },
-  { value: ROLES.SYSTEM_ADMIN, label: 'System Administrator' },
+  { value: USER_ROLES.OFFICE_USER, label: USER_ROLE_LABELS[USER_ROLES.OFFICE_USER] },
+  { value: USER_ROLES.SUPERVISOR, label: USER_ROLE_LABELS[USER_ROLES.SUPERVISOR] },
+  { value: USER_ROLES.ADMIN, label: USER_ROLE_LABELS[USER_ROLES.ADMIN] },
 ]
 
 export function getUsers() {
   // TODO: Replace this seeded frontend-only user list with a backend GET /users endpoint.
-  return users.map((user) => ({ ...user }))
+  return users.map((user) => normalizeMockUser({ ...user }))
 }

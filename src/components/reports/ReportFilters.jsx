@@ -5,6 +5,9 @@ function ReportFilters({
   filters,
   stageOptions,
   contributorOptions,
+  showDocumentFilters = true,
+  showWorkflowFilters = true,
+  errorMessage = '',
   onChange,
   onSubmit,
 }) {
@@ -76,75 +79,83 @@ function ReportFilters({
           </>
         ) : null}
 
-        <div className="form-field">
-          <label htmlFor="report-document-type" className="form-field__label">
-            Document Type
-          </label>
-          <select
-            id="report-document-type"
-            value={filters.documentType}
-            onChange={(event) => onChange('documentType', event.target.value)}
-          >
-            {['All document types', 'Contract', 'Letter', 'Memo', 'Report'].map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
+        {showDocumentFilters ? (
+          <div className="form-field">
+            <label htmlFor="report-document-type" className="form-field__label">
+              Document Type
+            </label>
+            <select
+              id="report-document-type"
+              value={filters.documentType}
+              onChange={(event) => onChange('documentType', event.target.value)}
+            >
+              {['All document types', 'Contract', 'Letter', 'Memo', 'Report'].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
 
-        <div className="form-field">
-          <label htmlFor="report-priority" className="form-field__label">
-            Priority
-          </label>
-          <select
-            id="report-priority"
-            value={filters.priority}
-            onChange={(event) => onChange('priority', event.target.value)}
-          >
-            {['All priorities', 'Normal', 'High', 'Urgent'].map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
+        {showWorkflowFilters ? (
+          <div className="form-field">
+            <label htmlFor="report-priority" className="form-field__label">
+              Priority
+            </label>
+            <select
+              id="report-priority"
+              value={filters.priority}
+              onChange={(event) => onChange('priority', event.target.value)}
+            >
+              {['All priorities', 'Normal', 'High', 'Urgent'].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
 
-        <div className="form-field">
-          <label htmlFor="report-stage" className="form-field__label">
-            Stage
-          </label>
-          <select
-            id="report-stage"
-            value={filters.stage}
-            onChange={(event) => onChange('stage', event.target.value)}
-          >
-            <option value="All stages">All stages</option>
-            {stageOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
+        {showWorkflowFilters ? (
+          <div className="form-field">
+            <label htmlFor="report-stage" className="form-field__label">
+              Stage
+            </label>
+            <select
+              id="report-stage"
+              value={filters.stage}
+              onChange={(event) => onChange('stage', event.target.value)}
+            >
+              <option value="All stages">All stages</option>
+              {stageOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
 
-        <div className="form-field">
-          <label htmlFor="report-contributor" className="form-field__label">
-            Staff Contributor
-          </label>
-          <select
-            id="report-contributor"
-            value={filters.contributor}
-            onChange={(event) => onChange('contributor', event.target.value)}
-          >
-            <option value="All staff contributors">All staff contributors</option>
-            {contributorOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
+        {showWorkflowFilters ? (
+          <div className="form-field">
+            <label htmlFor="report-contributor" className="form-field__label">
+              Staff Contributor
+            </label>
+            <select
+              id="report-contributor"
+              value={filters.contributor}
+              onChange={(event) => onChange('contributor', event.target.value)}
+            >
+              <option value="All staff contributors">All staff contributors</option>
+              {contributorOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
 
         <div className="reports-filter-action">
           <div className="reports-filter-grid__actions">
@@ -154,6 +165,12 @@ function ReportFilters({
           </div>
         </div>
       </FilterBar>
+
+      {errorMessage ? (
+        <p className="reports-filter-message" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
     </form>
   )
 }

@@ -21,7 +21,7 @@ function AppLayout() {
         </main>
 
         <footer className="app-footer">
-          <span>© 2026 Ministry of Roads and Highways</span>
+          <span>Copyright 2026 Ministry of Roads and Highways</span>
           <span>Correspondence Management &amp; Tracking System</span>
         </footer>
       </div>

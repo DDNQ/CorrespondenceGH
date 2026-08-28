@@ -4,6 +4,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../../context/useAuth'
 import { navigationByRole } from '../../utils/navigation'
+import { resolveCorrespondenceListView } from '../../utils/correspondenceListView.js'
 import BrandMark from '../common/BrandMark'
 
 function Sidebar({ isOpen, onClose }) {
@@ -14,6 +15,7 @@ function Sidebar({ isOpen, onClose }) {
   const [isCorrespondenceExpanded, setIsCorrespondenceExpanded] = useState(false)
   const isOnCorrespondenceRoute = location.pathname.startsWith('/correspondence')
   const isSubmenuOpen = isOnCorrespondenceRoute || isCorrespondenceExpanded
+  const correspondenceView = resolveCorrespondenceListView(location.search)
 
   const handleLogout = () => {
     logout()
@@ -34,7 +36,7 @@ function Sidebar({ isOpen, onClose }) {
               onClick={onClose}
               aria-label="Close navigation"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
             <BrandMark compact invert />
@@ -54,8 +56,10 @@ function Sidebar({ isOpen, onClose }) {
                   }
                   onClick={onClose}
                 >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
+                  <span className="sidebar-link__content">
+                    <Icon size={16} className="sidebar-link__icon" />
+                    <span className="sidebar-link__label">{item.label}</span>
+                  </span>
                 </NavLink>
               )
             })}
@@ -79,15 +83,15 @@ function Sidebar({ isOpen, onClose }) {
                             aria-expanded={isSubmenuOpen}
                           >
                             <span className="sidebar-link__content">
-                              <Icon size={18} />
-                              <span>{item.label}</span>
+                              <Icon size={16} className="sidebar-link__icon" />
+                              <span className="sidebar-link__label">{item.label}</span>
                             </span>
                             <ChevronDown
-                              size={18}
+                              size={16}
                               className={
                                 isSubmenuOpen
-                                  ? 'sidebar-link__chevron sidebar-link__chevron--open'
-                                  : 'sidebar-link__chevron'
+                                  ? 'sidebar-link__chevron sidebar-link__icon sidebar-link__chevron--open'
+                                  : 'sidebar-link__chevron sidebar-link__icon'
                               }
                             />
                           </button>
@@ -96,15 +100,9 @@ function Sidebar({ isOpen, onClose }) {
                             <div className="sidebar-submenu__items">
                               {item.children.map((child) => {
                                 const ChildIcon = child.icon
-                                const childSearch = new URLSearchParams(location.search)
-                                const isAllStatus =
-                                  child.status === 'all' &&
-                                  (!childSearch.get('status') ||
-                                    childSearch.get('status') === 'all')
                                 const isActive =
                                   location.pathname === '/correspondence' &&
-                                  (isAllStatus ||
-                                    childSearch.get('status') === child.status)
+                                  correspondenceView.activeFilterId === child.status
 
                                 return (
                                   <NavLink
@@ -117,8 +115,8 @@ function Sidebar({ isOpen, onClose }) {
                                     }
                                     onClick={onClose}
                                   >
-                                    <ChildIcon size={15} />
-                                    <span>{child.label}</span>
+                                    <ChildIcon size={13} className="sidebar-sublink__icon" />
+                                    <span className="sidebar-sublink__label">{child.label}</span>
                                   </NavLink>
                                 )
                               })}
@@ -138,8 +136,10 @@ function Sidebar({ isOpen, onClose }) {
                         }
                         onClick={onClose}
                       >
-                        <Icon size={18} />
-                        <span>{item.label}</span>
+                        <span className="sidebar-link__content">
+                          <Icon size={16} className="sidebar-link__icon" />
+                          <span className="sidebar-link__label">{item.label}</span>
+                        </span>
                       </NavLink>
                     )
                   })}
@@ -161,8 +161,10 @@ function Sidebar({ isOpen, onClose }) {
                   }
                   onClick={onClose}
                 >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
+                  <span className="sidebar-link__content">
+                    <Icon size={16} className="sidebar-link__icon" />
+                    <span className="sidebar-link__label">{item.label}</span>
+                  </span>
                 </NavLink>
               )
             })}
@@ -173,8 +175,8 @@ function Sidebar({ isOpen, onClose }) {
               onClick={handleLogout}
             >
               <span className="sidebar-link__content">
-                <LogOut size={18} />
-                <span>Logout</span>
+                <LogOut size={16} className="sidebar-link__icon" />
+                <span className="sidebar-link__label">Logout</span>
               </span>
             </button>
           </div>

@@ -1,17 +1,11 @@
-import { ROLES } from '../constants/roles'
-import { getOfficeById, offices } from '../data/offices'
+import { isAdmin } from '../constants/roles.js'
+import {
+  getCorrespondenceApiId,
+  getCorrespondenceDisplayReference,
+} from './correspondence.js'
+import { isSameOffice, normalizeOffice } from './offices.js'
 
 const NOTIFICATION_STORAGE_KEY = 'mrh-correspondence-notifications'
-
-function normalizeText(value) {
-  return String(value ?? '').trim().toLowerCase()
-}
-
-function getOfficeByName(officeName) {
-  const normalizedOfficeName = normalizeText(officeName)
-
-  return offices.find((office) => normalizeText(office.name) === normalizedOfficeName) ?? null
-}
 
 export function getNotificationStorageKey() {
   return NOTIFICATION_STORAGE_KEY
@@ -22,42 +16,54 @@ export function normalizeNotification(notification) {
     return null
   }
 
-  const destinationOfficeName =
-    notification.destinationOfficeName ??
+  const destinationOffice = normalizeOffice(
     notification.destinationOffice ??
-    getOfficeById(notification.destinationOfficeId)?.name ??
-    ''
-  const sourceOfficeName =
-    notification.sourceOfficeName ??
-    notification.originatingOffice ??
+      notification.destination_office ??
+      notification.destinationOfficeId ??
+      notification.destination_office_id ??
+      notification.destinationOfficeName ??
+      notification.destination_office_name ??
+      null,
+  )
+  const sourceOffice = normalizeOffice(
     notification.sourceOffice ??
-    getOfficeById(notification.sourceOfficeId)?.name ??
-    ''
+      notification.source_office ??
+      notification.originatingOffice ??
+      notification.originating_office ??
+      notification.sourceOfficeId ??
+      notification.source_office_id ??
+      notification.sourceOfficeName ??
+      notification.source_office_name ??
+      null,
+  )
 
   return {
     ...notification,
     type: notification.type ?? 'New',
     title: notification.title ?? 'Correspondence received from another office',
     message: notification.message ?? '',
+    correspondenceId:
+      notification.correspondenceId ?? notification.correspondence_id ?? null,
+    referenceNumber:
+      notification.referenceNumber ??
+      notification.reference_number ??
+      notification.correspondenceReference ??
+      '',
     correspondenceReference: notification.correspondenceReference ?? '',
     correspondenceSubject: notification.correspondenceSubject ?? '',
-    destinationOfficeId:
-      notification.destinationOfficeId ??
-      getOfficeByName(destinationOfficeName)?.id ??
-      '',
-    destinationOfficeName,
-    destinationOffice: destinationOfficeName,
-    sourceOfficeId:
-      notification.sourceOfficeId ??
-      getOfficeByName(sourceOfficeName)?.id ??
-      '',
-    sourceOfficeName,
-    sourceOffice: sourceOfficeName,
-    originatingOffice: sourceOfficeName,
+    destinationOffice,
+    destinationOfficeId: destinationOffice?.id ?? null,
+    destinationOfficeName: destinationOffice?.name ?? '',
+    sourceOffice,
+    sourceOfficeId: sourceOffice?.id ?? null,
+    sourceOfficeName: sourceOffice?.name ?? '',
+    originatingOffice: sourceOffice?.name ?? '',
     relatedRoute:
       notification.relatedRoute ??
-      (notification.correspondenceReference
-        ? `/correspondence/${encodeURIComponent(notification.correspondenceReference)}`
+      ((notification.referenceNumber ?? notification.correspondenceReference)
+        ? `/correspondence/${encodeURIComponent(
+            notification.referenceNumber ?? notification.correspondenceReference,
+          )}`
         : '/notifications'),
     createdAt: notification.createdAt ?? '',
     isRead: notification.isRead ?? false,
@@ -73,24 +79,13 @@ export function notificationBelongsToOffice(notification, user) {
     return false
   }
 
-  if (user.role === ROLES.SYSTEM_ADMIN) {
+  if (isAdmin(user)) {
     return false
   }
 
   const normalizedNotification = normalizeNotification(notification)
 
-  if (
-    normalizedNotification.destinationOfficeId &&
-    user.officeId &&
-    normalizedNotification.destinationOfficeId === user.officeId
-  ) {
-    return true
-  }
-
-  return (
-    normalizeText(normalizedNotification.destinationOfficeName) ===
-    normalizeText(user.officeName)
-  )
+  return isSameOffice(normalizedNotification.destinationOffice, user.office)
 }
 
 export function hasNotificationForEvent(currentNotifications, notification) {
@@ -120,33 +115,26 @@ export function createCorrespondenceReceivedNotification({
   title = 'Correspondence received from another office',
 }) {
   const normalizedDestinationOffice =
-    destinationOffice?.id || destinationOffice?.name
-      ? destinationOffice
-      : getOfficeByName(
-          record?.currentOfficeName ?? record?.currentOffice ?? record?.destinationOffice ?? '',
-        )
+    normalizeOffice(destinationOffice ?? record?.currentOffice ?? record?.destinationOffice)
   const normalizedSourceOffice =
-    sourceOffice?.id || sourceOffice?.name
-      ? sourceOffice
-      : getOfficeByName(
-          record?.registeringOfficeName ??
-            record?.registeringOffice ??
-            forwardingEvent?.fromOfficeName ??
-            '',
-        )
+    normalizeOffice(sourceOffice ?? record?.registeringOffice ?? forwardingEvent?.fromOffice)
 
   return normalizeNotification({
     id: `notif-${eventId}`,
     type: 'New',
     title,
     message,
-    correspondenceReference: record.reference,
+    correspondenceId: getCorrespondenceApiId(record),
+    referenceNumber: getCorrespondenceDisplayReference(record),
+    correspondenceReference: getCorrespondenceDisplayReference(record),
     correspondenceSubject: record.subject,
-    destinationOfficeId: normalizedDestinationOffice?.id ?? '',
+    destinationOffice: normalizedDestinationOffice,
+    destinationOfficeId: normalizedDestinationOffice?.id ?? null,
     destinationOfficeName: normalizedDestinationOffice?.name ?? '',
-    sourceOfficeId: normalizedSourceOffice?.id ?? '',
+    sourceOffice: normalizedSourceOffice,
+    sourceOfficeId: normalizedSourceOffice?.id ?? null,
     sourceOfficeName: normalizedSourceOffice?.name ?? '',
-    relatedRoute: `/correspondence/${encodeURIComponent(record.reference)}`,
+    relatedRoute: `/correspondence/${encodeURIComponent(getCorrespondenceDisplayReference(record))}`,
     createdAt,
     isRead: false,
     readAt: '',

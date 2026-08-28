@@ -1,16 +1,14 @@
-import { Bell, Menu, Search } from 'lucide-react'
+import { Menu, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
-import { ROLES } from '../../constants/roles'
 import { useAuth } from '../../context/useAuth'
-import { useNotification } from '../../context/useNotification'
 import { getPageLabel } from '../../utils/navigation'
+import { getOfficeDisplayName } from '../../utils/offices.js'
 import UserSummary from './UserSummary'
 
 function Topbar({ onOpenSidebar }) {
   const { currentUser } = useAuth()
-  const { getUnreadCountForOffice } = useNotification()
   const location = useLocation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -22,12 +20,18 @@ function Topbar({ onOpenSidebar }) {
   const isReportsPage = location.pathname === '/reports'
   const isCorrespondenceDetail =
     location.pathname.startsWith('/correspondence/') && location.pathname !== '/correspondence/new'
-  const detailReference = isCorrespondenceDetail
+  const detailPathSegment = isCorrespondenceDetail
     ? decodeURIComponent(location.pathname.replace('/correspondence/', ''))
     : ''
-  const showNotifications =
-    currentUser?.role === ROLES.OFFICE_USER || currentUser?.role === ROLES.OFFICE_SUPERVISOR
-  const unreadNotifications = getUnreadCountForOffice(currentUser)
+  const detailReference = isCorrespondenceDetail
+    ? typeof location.state?.correspondenceReference === 'string' &&
+      location.state.correspondenceReference.trim()
+      ? location.state.correspondenceReference.trim()
+      : detailPathSegment.includes('/')
+        ? detailPathSegment
+        : 'Details'
+    : ''
+  const officeName = getOfficeDisplayName(currentUser?.office)
 
   const handleSearchSubmit = (event) => {
     event.preventDefault()
@@ -59,8 +63,8 @@ function Topbar({ onOpenSidebar }) {
             <p className="app-topbar__breadcrumb">
               <span className="app-topbar__breadcrumb-current">Dashboard</span>
               <span className="app-topbar__breadcrumb-separator">/</span>
-              <span className="app-topbar__breadcrumb-context">
-                {currentUser?.officeName}
+                <span className="app-topbar__breadcrumb-context">
+                {officeName}
               </span>
             </p>
           ) : isCorrespondenceDetail ? (
@@ -73,13 +77,13 @@ function Topbar({ onOpenSidebar }) {
             <p className="app-topbar__breadcrumb">
               <span className="app-topbar__breadcrumb-current">Notifications</span>
               <span className="app-topbar__breadcrumb-separator">/</span>
-              <span className="app-topbar__breadcrumb-context">{currentUser?.officeName}</span>
+              <span className="app-topbar__breadcrumb-context">{officeName}</span>
             </p>
           ) : isReportsPage ? (
             <p className="app-topbar__breadcrumb">
               <span className="app-topbar__breadcrumb-current">Reports</span>
               <span className="app-topbar__breadcrumb-separator">/</span>
-              <span className="app-topbar__breadcrumb-context">{currentUser?.officeName}</span>
+              <span className="app-topbar__breadcrumb-context">{officeName}</span>
             </p>
           ) : isSettingsPage ? (
             <p className="app-topbar__breadcrumb">
@@ -108,20 +112,6 @@ function Topbar({ onOpenSidebar }) {
             placeholder="Search reference, subject or sender"
           />
         </form>
-
-        {showNotifications ? (
-          <button
-            type="button"
-            className="topbar-icon-button"
-            aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ''}`}
-            onClick={() => navigate('/notifications')}
-          >
-            <Bell size={18} />
-            {unreadNotifications ? (
-              <span className="topbar-icon-button__indicator" aria-hidden="true"></span>
-            ) : null}
-          </button>
-        ) : null}
 
         <UserSummary user={currentUser} compact />
       </div>

@@ -1,3 +1,11 @@
+import {
+  getOfficeByCode as getOfficeByCodeFromCollection,
+  getOfficeById as getOfficeByIdFromCollection,
+  getOfficeByName as getOfficeByNameFromCollection,
+  normalizeOffice,
+  resolveOffice as resolveOfficeFromCollection,
+} from '../utils/offices.js'
+
 export const offices = [
   {
     id: 'office-registry',
@@ -89,8 +97,20 @@ export const offices = [
     overdue: 0,
     status: 'Active',
   },
-]
+].map((office) => normalizeOffice(office))
 
 export function getOfficeById(officeId) {
-  return offices.find((office) => office.id === officeId) ?? null
+  return getOfficeByIdFromCollection(offices, officeId)
+}
+
+export function getOfficeByCode(officeCode) {
+  return getOfficeByCodeFromCollection(offices, officeCode)
+}
+
+export function getOfficeByName(officeName) {
+  return getOfficeByNameFromCollection(offices, officeName)
+}
+
+export function resolveOffice(rawOffice) {
+  return resolveOfficeFromCollection(offices, rawOffice)
 }

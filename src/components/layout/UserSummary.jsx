@@ -1,10 +1,5 @@
-import { ROLES } from '../../constants/roles'
-
-const roleLabels = {
-  [ROLES.OFFICE_USER]: 'Office User',
-  [ROLES.OFFICE_SUPERVISOR]: 'Office Supervisor',
-  [ROLES.SYSTEM_ADMIN]: 'System Administrator',
-}
+import { getUserRoleLabel } from '../../constants/roles'
+import { getAdminIdentityPresentation } from '../../utils/adminUsersOffices.js'
 
 function getInitials(fullName = '') {
   return fullName
@@ -17,6 +12,8 @@ function getInitials(fullName = '') {
 }
 
 function UserSummary({ user, compact = false }) {
+  const identityPresentation = getAdminIdentityPresentation(user)
+
   return (
     <div className={compact ? 'user-summary user-summary--compact' : 'user-summary'}>
       <div className="user-summary__avatar" aria-hidden="true">
@@ -24,8 +21,8 @@ function UserSummary({ user, compact = false }) {
       </div>
       <div className="user-summary__copy">
         <strong>{user?.fullName}</strong>
-        <span>{user?.officeName}</span>
-        <span>{roleLabels[user?.role] ?? user?.role}</span>
+        <span>{identityPresentation.secondaryLine}</span>
+        <span>{identityPresentation.tertiaryLine || getUserRoleLabel(user?.role)}</span>
       </div>
     </div>
   )

@@ -3,10 +3,12 @@ import { useMemo, useState } from 'react'
 
 import PageHeader from '../../components/common/PageHeader'
 import SectionCard from '../../components/common/SectionCard'
-import { ROLES } from '../../constants/roles'
+import { getUserRoleLabel, isAdmin } from '../../constants/roles'
 import { useAuth } from '../../context/useAuth'
 import { usePreferences } from '../../context/usePreferences'
 import { useToast } from '../../context/useToast'
+import { getAdminUserDisplayName } from '../../utils/adminUsersOffices.js'
+import { getOfficeDisplayName } from '../../utils/offices.js'
 
 const TABS = [
   { id: 'account', label: 'Account & Office' },
@@ -30,18 +32,6 @@ const preferenceFields = [
     description: 'Use slightly tighter spacing when browsing correspondence lists.',
   },
 ]
-
-function formatRoleLabel(role) {
-  if (role === ROLES.OFFICE_SUPERVISOR) {
-    return 'Office Supervisor'
-  }
-
-  if (role === ROLES.SYSTEM_ADMIN) {
-    return 'System Administrator'
-  }
-
-  return 'Office User'
-}
 
 function getInitials(name) {
   const parts = name?.trim().split(/\s+/).filter(Boolean) ?? []
@@ -94,11 +84,12 @@ function SettingsPage() {
   const [activeTab, setActiveTab] = useState('account')
   const [draftPreferences, setDraftPreferences] = useState(preferences)
   const [isSaving, setIsSaving] = useState(false)
+  const displayName = getAdminUserDisplayName(currentUser)
+  const officeName = isAdmin(currentUser) ? 'System-wide' : getOfficeDisplayName(currentUser?.office)
 
-  const identityLine = useMemo(
-    () => `${formatRoleLabel(currentUser?.role)} • ${getFieldValue(currentUser?.officeName)}`,
-    [currentUser?.officeName, currentUser?.role],
-  )
+  const identityLine = useMemo(() => {
+    return `${displayName} · ${getFieldValue(officeName)}`
+  }, [displayName, officeName])
 
   const hasUnsavedChanges = useMemo(
     () => JSON.stringify(draftPreferences) !== JSON.stringify(preferences),
@@ -129,10 +120,7 @@ function SettingsPage() {
 
   return (
     <section className="settings-page">
-      <PageHeader
-        title="Account & Preferences"
-        description="View your account and office information and manage simple personal preferences."
-      />
+      <PageHeader title="Account & Preferences" />
 
       <div className="settings-layout">
         <SectionCard className="settings-nav-card">
@@ -158,7 +146,6 @@ function SettingsPage() {
           <SectionCard
             className="settings-content-card"
             title="Account Information"
-            description="Your login identity and office association."
           >
             <div
               id="settings-panel-account"
@@ -168,19 +155,19 @@ function SettingsPage() {
             >
               <div className="settings-profile">
                 <div className="settings-profile__avatar" aria-hidden="true">
-                  {getInitials(currentUser?.fullName)}
+                  {getInitials(displayName)}
                 </div>
                 <div className="settings-profile__copy">
-                  <strong>{getFieldValue(currentUser?.fullName)}</strong>
+                  <strong>{getFieldValue(displayName)}</strong>
                   <span>{identityLine}</span>
                 </div>
               </div>
 
               <div className="account-fields">
-                <ReadOnlyField label="Display Name" value={currentUser?.fullName} />
+                <ReadOnlyField label="Display Name" value={displayName} />
                 <ReadOnlyField label="Email Address" value={currentUser?.email} />
-                <ReadOnlyField label="Office" value={currentUser?.officeName} />
-                <ReadOnlyField label="Role" value={formatRoleLabel(currentUser?.role)} />
+                <ReadOnlyField label="Office" value={officeName} />
+                <ReadOnlyField label="Role" value={getUserRoleLabel(currentUser?.role)} />
               </div>
 
               <div className="settings-info-notice" role="note" aria-label="Administrator-managed account information notice">
@@ -201,7 +188,6 @@ function SettingsPage() {
           <SectionCard
             className="settings-content-card"
             title="System Preferences"
-            description="Simple personal display and notification settings."
           >
             <div
               id="settings-panel-preferences"

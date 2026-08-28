@@ -30,7 +30,7 @@ function CorrespondenceListItem({ record, isHighlighted = false, onOpen }) {
       onKeyDown={handleKeyDown}
     >
       <div className="correspondence-row__primary">
-        <p className="correspondence-row__reference">{record.reference}</p>
+        <p className="correspondence-row__reference">{record.referenceNumber}</p>
         <h3>{record.subject}</h3>
         <p className="correspondence-row__meta">
           {record.documentType}
@@ -46,7 +46,7 @@ function CorrespondenceListItem({ record, isHighlighted = false, onOpen }) {
 
       <div className="correspondence-row__office">
         <p className="correspondence-row__label">Current Office</p>
-        <p>{record.currentOffice}</p>
+        <p>{record.currentOfficeName || record.currentOffice?.name || 'Office not available'}</p>
         <p className="correspondence-row__support">
           {record.forwardingContext?.text || record.arrivedAtCurrentOffice}
         </p>

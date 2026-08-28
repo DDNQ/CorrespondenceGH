@@ -1,4 +1,5 @@
 :root {
+  --app-density-scale: 1;
   --color-navy: #0f2747;
   --color-navy-950: #041b31;
   --color-navy-900: #06233f;
@@ -28,4 +29,42 @@
   --radius-sm: 12px;
   --layout-max-width: 1560px;
   --sidebar-width: 264px;
+  --app-layout-max-width: var(--layout-max-width);
+  --app-sidebar-width: var(--sidebar-width);
+  --app-topbar-height: calc(5rem * var(--app-density-scale));
+  --app-page-padding-x: calc(2rem * var(--app-density-scale));
+  --app-page-padding-y: calc(1.7rem * var(--app-density-scale));
+  --app-page-title-size: calc(2.35rem * var(--app-density-scale));
+  --app-page-subtitle-size: calc(0.95rem * var(--app-density-scale));
+  --app-section-title-size: calc(1.05rem * var(--app-density-scale));
+  --app-body-font-size: calc(0.95rem * var(--app-density-scale));
+  --app-small-font-size: calc(0.82rem * var(--app-density-scale));
+  --app-label-font-size: calc(0.78rem * var(--app-density-scale));
+  --app-table-header-size: calc(0.76rem * var(--app-density-scale));
+  --app-card-padding: calc(1rem * var(--app-density-scale));
+  --app-card-gap: calc(0.75rem * var(--app-density-scale));
+  --app-section-gap: calc(1rem * var(--app-density-scale));
+  --app-control-height: calc(2.8rem * var(--app-density-scale));
+  --app-control-font-size: calc(0.9rem * var(--app-density-scale));
+  --app-button-height: calc(2.875rem * var(--app-density-scale));
+  --app-button-font-size: calc(0.9rem * var(--app-density-scale));
+  --app-button-padding-x: calc(1.1rem * var(--app-density-scale));
+  --app-icon-button-size: calc(2.5rem * var(--app-density-scale));
+  --app-icon-size: calc(1rem * var(--app-density-scale));
+  --app-table-cell-padding-x: calc(0.625rem * var(--app-density-scale));
+  --app-table-cell-padding-y: calc(0.75rem * var(--app-density-scale));
+  --app-badge-font-size: calc(0.76rem * var(--app-density-scale));
+  --app-badge-padding-x: calc(0.65rem * var(--app-density-scale));
+  --app-badge-padding-y: calc(0.35rem * var(--app-density-scale));
+  --app-modal-padding: calc(1.25rem * var(--app-density-scale));
+  --app-modal-title-size: calc(1.15rem * var(--app-density-scale));
+}
+
+@media (min-width: 901px) {
+  .app-shell,
+  .modal-backdrop {
+    --app-density-scale: 0.75;
+    --app-layout-max-width: calc(var(--layout-max-width) * var(--app-density-scale));
+    --app-sidebar-width: calc(var(--sidebar-width) * var(--app-density-scale));
+  }
 }

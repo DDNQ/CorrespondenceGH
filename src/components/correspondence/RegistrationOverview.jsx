@@ -2,22 +2,29 @@ function getValueOrPlaceholder(value) {
   return value?.trim?.() ? value : 'Not selected'
 }
 
-function RegistrationOverview({ summary, registeringOffice }) {
+function RegistrationOverview({ summary, registeringOffice, isApiMode = false }) {
   const hasDestination = Boolean(summary.destinationOffice?.trim?.())
   const routeDestination = getValueOrPlaceholder(summary.destinationOffice)
 
   return (
     <div className="register-overview">
-      <div
-        className={
-          hasDestination
-            ? 'register-overview__destination register-overview__destination--selected'
-            : 'register-overview__destination'
-        }
-      >
-        <span>Destination Office</span>
-        <strong>{routeDestination}</strong>
-      </div>
+      {isApiMode ? (
+        <div className="register-overview__destination register-overview__destination--selected">
+          <span>Initial Office</span>
+          <strong>{getValueOrPlaceholder(registeringOffice)}</strong>
+        </div>
+      ) : (
+        <div
+          className={
+            hasDestination
+              ? 'register-overview__destination register-overview__destination--selected'
+              : 'register-overview__destination'
+          }
+        >
+          <span>Destination Office</span>
+          <strong>{routeDestination}</strong>
+        </div>
+      )}
 
       <dl className="register-overview__details">
         <div>
@@ -45,8 +52,8 @@ function RegistrationOverview({ summary, registeringOffice }) {
           <dd>{registeringOffice}</dd>
         </div>
         <div>
-          <dt>Destination Office</dt>
-          <dd>{routeDestination}</dd>
+          <dt>{isApiMode ? 'Initial Office' : 'Destination Office'}</dt>
+          <dd>{isApiMode ? getValueOrPlaceholder(registeringOffice) : routeDestination}</dd>
         </div>
         <div>
           <dt>Initial Stage</dt>
@@ -56,14 +63,16 @@ function RegistrationOverview({ summary, registeringOffice }) {
           <dt>Stage Deadline</dt>
           <dd>{getValueOrPlaceholder(summary.stageDeadline)}</dd>
         </div>
-        <div>
-          <dt>Initial Route</dt>
-          <dd className="register-overview__route">
-            <span>{registeringOffice}</span>
-            <span aria-hidden="true">-&gt;</span>
-            <span>{routeDestination}</span>
-          </dd>
-        </div>
+        {isApiMode ? null : (
+          <div>
+            <dt>Initial Route</dt>
+            <dd className="register-overview__route">
+              <span>{registeringOffice}</span>
+              <span aria-hidden="true">-&gt;</span>
+              <span>{routeDestination}</span>
+            </dd>
+          </div>
+        )}
       </dl>
     </div>
   )

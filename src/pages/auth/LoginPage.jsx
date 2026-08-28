@@ -1,32 +1,76 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 
 import BrandMark from '../../components/common/BrandMark'
 import FormField from '../../components/common/FormField'
 import PasswordField from '../../components/common/PasswordField'
 import { useAuth } from '../../context/useAuth'
-import { getDefaultRouteForRole } from '../../utils/auth'
+import { getAuthenticatedRouteTarget } from '../../context/authRuntime.js'
 
 function LoginPage() {
-  const { currentUser, isAuthenticated, signIn } = useAuth()
-  const navigate = useNavigate()
+  const {
+    activeSource,
+    authenticationError,
+    clearAuthenticationError,
+    currentUser,
+    isAuthenticated,
+    isInitializing,
+    isSubmittingLogin,
+    signIn,
+  } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false,
   })
   const [errors, setErrors] = useState({})
-  const [authError, setAuthError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
   if (isAuthenticated && currentUser) {
-    return <Navigate to={getDefaultRouteForRole(currentUser.role)} replace />
+    return (
+      <Navigate
+        to={getAuthenticatedRouteTarget({
+          user: currentUser,
+          activeSource,
+        })}
+        replace
+      />
+    )
+  }
+
+  if (isInitializing) {
+    return (
+      <main className="auth-page">
+        <section className="auth-shell">
+          <header className="auth-shell__brand">
+            <BrandMark invert small />
+          </header>
+
+          <div className="auth-center">
+            <div className="auth-emblem">
+              <BrandMark invert showCopy={false} small />
+            </div>
+
+            <div className="auth-card">
+              <div className="auth-card__header">
+                <h2>Restoring session</h2>
+                <p>Please wait while access is being verified.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    )
   }
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target
 
+    clearAuthenticationError()
+    setErrors((current) => ({
+      ...current,
+      [name]: '',
+    }))
     setFormData((current) => ({
       ...current,
       [name]: type === 'checkbox' ? checked : value,
@@ -54,21 +98,15 @@ function LoginPage() {
 
     const validationErrors = validateForm()
     setErrors(validationErrors)
-    setAuthError('')
 
     if (Object.keys(validationErrors).length > 0) {
       return
     }
 
-    setIsSubmitting(true)
-
     try {
-      const authenticatedUser = await signIn(formData)
-      navigate(getDefaultRouteForRole(authenticatedUser.role), { replace: true })
-    } catch (error) {
-      setAuthError(error.message)
-    } finally {
-      setIsSubmitting(false)
+      await signIn(formData)
+    } catch {
+      // Authentication errors are normalized and surfaced through AuthContext state.
     }
   }
 
@@ -133,18 +171,18 @@ function LoginPage() {
                 <span>Remember me on this device</span>
               </label>
 
-              {authError ? (
+              {authenticationError ? (
                 <p className="auth-form__error" role="alert">
-                  {authError}
+                  {authenticationError}
                 </p>
               ) : null}
 
               <button
                 type="submit"
                 className="button button--primary button--block"
-                disabled={isSubmitting}
+                disabled={isSubmittingLogin}
               >
-                {isSubmitting ? 'Signing in...' : 'Sign In'}
+                {isSubmittingLogin ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
 

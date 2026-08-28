@@ -7,8 +7,8 @@ function CorrespondenceList({ records, highlightedReference = '', onOpenRecord }
         <CorrespondenceListItem
           key={record.id}
           record={record}
-          isHighlighted={record.reference === highlightedReference}
-          onOpen={() => onOpenRecord(record.reference)}
+          isHighlighted={record.referenceNumber === highlightedReference}
+          onOpen={() => onOpenRecord(record.referenceNumber)}
         />
       ))}
     </div>

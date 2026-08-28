@@ -51,7 +51,7 @@ function NotificationListItem({ notification, onOpen }) {
       onKeyDown={handleKeyDown}
       aria-label={`${notification.type} notification: ${notification.title}. ${
         notification.isRead ? 'Read' : 'Unread'
-      }. Open correspondence ${notification.correspondenceReference}.`}
+      }. Open correspondence ${notification.referenceNumber}.`}
     >
       <span className={`notification-item__marker notification-item__marker--${config.tone}`} aria-hidden="true">
         <Icon size={16} />
@@ -61,7 +61,7 @@ function NotificationListItem({ notification, onOpen }) {
         <strong>{notification.title}</strong>
         <p>{notification.message}</p>
         <div className="notification-item__meta">
-          <span className="notification-item__reference">{notification.correspondenceReference}</span>
+          <span className="notification-item__reference">{notification.referenceNumber}</span>
           <span>{notification.correspondenceSubject}</span>
           <span>
             {notification.sourceOfficeName || notification.originatingOffice} to {notification.destinationOfficeName || notification.destinationOffice}
